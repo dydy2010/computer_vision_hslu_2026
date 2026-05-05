@@ -19,6 +19,7 @@ You install and run **Ollama in the terminal**. The notebook only needs the **Py
      ```bash
      ollama serve
      ```
+    - Note: `ollama serve` starts the server for all models. You do **not** pass a model name here.
    - Keep this terminal open while you run the notebook.
 
 3. **Stop the Ollama server (when finished)**
@@ -32,13 +33,17 @@ You install and run **Ollama in the terminal**. The notebook only needs the **Py
 4. **Pull the official Qwen VLM model**
    - Concept: Pull = download the model once.
    - Task: Choose one model and download it.
-   - Recommended (fast, official, multimodal):
+   - Recommended (matches this project):
+     ```bash
+     ollama pull qwen3-vl:4b
+     ```
+   - Alternative (if you prefer another model):
      ```bash
      ollama pull qwen3.5:4b
      ```
-   - Alternative (Qwen VL line):
+   - Optional check:
      ```bash
-     ollama pull qwen3-vl:4b
+     ollama list
      ```
 
 5. **Install the Ollama Python client (inside your notebook environment)**
@@ -52,7 +57,7 @@ You install and run **Ollama in the terminal**. The notebook only needs the **Py
 6. **Use the model in the notebook**
    - Concept: The notebook sends images to the local Ollama server.
    - Task: Use the client with `ollama.chat(..., images=[...])`.
-   - Example: set the model name to match what you pulled.
+  - Example: set the model name to match what you pulled (this project uses `qwen3-vl:4b`).
 
 ## Quick checklist
 - Ollama installed? ✅
