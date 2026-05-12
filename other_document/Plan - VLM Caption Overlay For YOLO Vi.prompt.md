@@ -4,7 +4,7 @@ Goal: Add a local VLM captioning step that fuses scene-level descriptions with Y
 
 **Scope**
 - Local notebook only (no Colab changes).
-- Use existing YOLO video output in runs/detect/predict*/.
+- Use existing YOLO video output in runs_output/detect/predict*/.
 - Add new cells for VLM install, captioning, and video overlay.
 
 **Steps**
@@ -16,10 +16,10 @@ Goal: Add a local VLM captioning step that fuses scene-level descriptions with Y
    - Samples frames every N seconds.
    - Runs VLM on each sampled frame to produce a short scene caption.
 4. Add an overlay cell that:
-   - Loads the YOLO-annotated video from runs/detect/predict*/.
+   - Loads the YOLO-annotated video from runs_output/detect/predict*/.
    - Draws the latest caption at the top (banner text).
    - Writes a new annotated MP4 output.
-5. Keep output files under runs/detect/predict*/vlm_overlay/.
+5. Keep output files under runs_output/detect/predict*/vlm_overlay/.
 
 **Outputs**
 - Annotated MP4 with YOLO boxes + VLM scene captions.
