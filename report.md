@@ -11,13 +11,13 @@ This project combines YOLO detection with a local Vision Language Model (VLM) to
 - Export compact outputs suitable for reports and slides.
 
 ## 3. Data and Environment
-- Dataset: Self-Driving-Car-3.
-- Inference outputs: `runs/detect/predict*`.
+- Dataset: Self-Driving-Car-3 (kept locally; not intended for git upload).
+- Inference outputs: `runs_output/detect/predict*`.
 - VLM runtime: Ollama + `qwen3-vl:4b` (local).
 
 ## 4. Implemented Pipeline
 ### 4.1 Detection and Input Resolution
-- YOLO outputs are read from `runs/detect`.
+- YOLO outputs are read from `runs_output/detect`.
 - The system prefers the highest numeric folder (`predict-N`) for deterministic behavior.
 
 ```python
@@ -49,9 +49,9 @@ ret, frame = cap.read()
 - Widget/session guards to reduce duplicated callback behavior during reruns.
 
 ## 5. Outputs
-- Captioned video: `runs/detect/predict*/vlm_overlay/*_vlm.mp4`
-- Optional compressed video: `runs/detect/predict*/vlm_overlay/converted_mp4/*_compressed.mp4`
-- Caption log: `runs/detect/predict*/vlm_overlay/*_vlm_log.md`
+- Captioned video: `runs_output/detect/predict*/vlm_overlay/*_vlm.mp4`
+- Optional compressed video: `runs_output/detect/predict*/vlm_overlay/converted_mp4/*_compressed.mp4`
+- Caption log: `runs_output/detect/predict*/vlm_overlay/*_vlm_log.md`
 
 ## 6. Current Results
 - End-to-end demo is operational.

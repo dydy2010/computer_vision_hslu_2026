@@ -1,9 +1,10 @@
 # Computer Vision HSLU 2026
 
-Local dashcam pipeline that combines YOLO detection with VLM scene understanding.
+Local dashcam pipeline that combines YOLO detection with CLIP brand recognition and VLM scene understanding.
 
 ## What This Project Does
-- Runs YOLO on driving video and saves outputs under `runs/detect/predict*`.
+- Runs YOLO on driving video and saves outputs under `runs_output/detect/predict*`.
+- Stores canonical model artifacts under `weights/yolo/` and `weights/clip/linear_probe/`.
 - Adds VLM captions using local Ollama (`qwen3-vl:4b`).
 - Supports quick frame-based Q&A for audience/demo usage.
 - Exports artifacts for reporting: captioned video, optional compressed MP4, and Markdown logs.
@@ -58,9 +59,9 @@ if not answer:
 ```
 
 ## Outputs
-- Captioned video: `runs/detect/predict*/vlm_overlay/*_vlm.mp4`
-- Optional compressed video: `runs/detect/predict*/vlm_overlay/converted_mp4/*_compressed.mp4`
-- Log/report file: `runs/detect/predict*/vlm_overlay/*_vlm_log.md`
+- Captioned video: `runs_output/detect/predict*/vlm_overlay/*_vlm.mp4`
+- Optional compressed video: `runs_output/detect/predict*/vlm_overlay/converted_mp4/*_compressed.mp4`
+- Log/report file: `runs_output/detect/predict*/vlm_overlay/*_vlm_log.md`
 
 ## Notes
 - Q&A uses one selected frame per timestamp (single-frame reasoning).
