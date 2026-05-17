@@ -30,10 +30,10 @@ This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32
 
 ### 4.1 Detection and Input Resolution
 - YOLO outputs are read from `runs_output/detect`.
-- The system prefers the highest numeric folder (`predict-N`) for deterministic behavior.
+- The system prefers the highest numeric folder (`predictN`, Ultralytics' default; `predict-N` / `predict_N` also accepted) for deterministic behavior.
 
 ```python
-match = re.fullmatch(r"predict-(\d+)", name)
+match = re.fullmatch(r"predict[-_]?(\d+)", name)
 if match:
 		numbered.append((int(match.group(1)), path))
 ```

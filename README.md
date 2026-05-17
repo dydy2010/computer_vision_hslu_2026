@@ -31,7 +31,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 
 **Stage 3 — VLM caption + Q&A** (`my_yolo_vlm_step3.ipynb`)
 - Local `qwen3-vl:4b` via the `ollama` Python client.
-- Auto-discovery priority: `clip_predict` → highest `predict-N` → `predict` → other child dirs of `runs_output/detect/` containing a video. Overridable via `INPUT_VIDEO`, `PREDICT_DIR`, `INPUT_ROOT`.
+- Auto-discovery priority: `clip_predict` → highest `predictN` (Ultralytics default; `predict-N` / `predict_N` also accepted) → `predict` → other child dirs of `runs_output/detect/` containing a video. Overridable via `INPUT_VIDEO`, `PREDICT_DIR`, `INPUT_ROOT`.
 - Adaptive captioning gate: gray-frame `absdiff().mean() ≥ CAPTION_DIFF_THRESHOLD (12.0)` **and** elapsed ≥ `CAPTION_MIN_SEC (5.0)`. Switch to fixed-interval mode with `CAPTION_MODE=fixed` and `CAPTION_EVERY_SEC`.
 - Q&A widget seeks by frame index (`fps * sec`), sends one frame, falls back with a simpler prompt if the model returns empty, guards against duplicate clicks.
 
@@ -65,7 +65,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 
 ## Important Learning Snippets
 
-### 1) Pick the latest numeric `predict-N` folder
+### 1) Pick the latest numeric `predictN` folder
 ```python
 def select_predict_dir(input_root):
 	predict_base = os.path.join(input_root, "predict")
@@ -73,7 +73,7 @@ def select_predict_dir(input_root):
 	numbered = []
 	for path in predict_dirs:
 		name = os.path.basename(path)
-		match = re.fullmatch(r"predict-(\d+)", name)
+		match = re.fullmatch(r"predict[-_]?(\d+)", name)
 		if match:
 			numbered.append((int(match.group(1)), path))
 	if numbered:
