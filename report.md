@@ -4,7 +4,7 @@
 > **Final deliverable:** PDF presentation (slides exported from this report + figures + demo video stills/clips). Code/notebooks are operational; DevOps (env pinning, repro scripts, dataset hygiene) is still ongoing.
 
 ## 1. Project Summary
-This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to produce a captioned dashcam demo. The pipeline is designed for reproducibility and presentation use: it generates an annotated video, an optional compressed export, and Markdown logs.
+This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to produce a captioned dashcam demo. The pipeline generates an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
 
 ## 2. Objectives
 - Detect driving-scene objects with YOLO (11 self-driving classes).
@@ -30,7 +30,8 @@ This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32
 
 ### 4.1 Detection and Input Resolution
 - YOLO outputs are read from `runs_output/detect`.
-- The system prefers the highest numeric folder (`predictN`, Ultralytics' default; `predict-N` / `predict_N` also accepted) for deterministic behavior.
+- Discovery order in Step 3 (`candidate_output_dirs`): `clip_predict` → highest numbered `predict*` (Ultralytics writes `predict`, `predict2`, `predict3`, …) → bare `predict` → any other sibling dir that contains a video.
+- The numbered-folder regex accepts both Ultralytics-default (`predict2`) and dashed/underscored variants:
 
 ```python
 match = re.fullmatch(r"predict[-_]?(\d+)", name)
@@ -56,14 +57,14 @@ ret, frame = cap.read()
 
 ### 4.4 Robustness Improvements
 - Deterministic video selection priority:
-	`compressed_video` -> `output_video` -> `input_video` -> resolved predict video.
+	`output_video` -> `input_video` -> resolved predict video.
 - Empty-response fallback retry for Q&A prompt.
 - Widget/session guards to reduce duplicated callback behavior during reruns.
 
 ## 5. Outputs
-- Captioned video: `runs_output/detect/predict*/vlm_overlay/*_vlm.mp4`
-- Optional compressed video: `runs_output/detect/predict*/vlm_overlay/converted_mp4/*_compressed.mp4`
-- Caption log: `runs_output/detect/predict*/vlm_overlay/*_vlm_log.md`
+- Stage 2 video: `runs_output/detect/clip_predict/annotated_video.mp4`
+- Stage 3 captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
+- Stage 1 (optional) compressed YOLO video: `runs_output/detect/predict*/converted_mp4/*_compressed.mp4` (produced by the Stage 1 `ffmpeg` cell, not by Stage 3).
 
 ## 6. Current Results
 - End-to-end demo is operational.

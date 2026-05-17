@@ -9,7 +9,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - Stores canonical model artifacts under `weights/yolo/` and `weights/clip/linear_probe/`.
 - Adds VLM captions using local Ollama (`qwen3-vl:4b`).
 - Supports quick frame-based Q&A for audience/demo usage.
-- Exports artifacts for reporting: captioned video, optional compressed MP4, and Markdown logs.
+- Exports the captioned video for reporting. (Stage 1 also has an optional `ffmpeg` compression cell that targets ~100 MB under `runs_output/detect/predict*/converted_mp4/`; Stage 3 currently does not compress its own output.)
 
 ## Pipeline Architecture (verified)
 
@@ -60,34 +60,45 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 5. Run `my_yolo_vlm_step3.ipynb`:
 	- setup/import cells,
 	- caption generation cell,
-	- optional compression,
 	- Q&A cell.
 
 ## Important Learning Snippets
 
-### 1) Pick the latest numeric `predictN` folder
+### 1) Discover the right output folder under `runs_output/detect/`
+Step 3 looks for an annotated video in this priority order: `clip_predict` → highest numbered `predict*` (Ultralytics writes `predict`, `predict2`, `predict3`, …) → bare `predict` → any other sibling dir that already contains a video. Mirrors the notebook's `candidate_output_dirs`.
+
 ```python
-def select_predict_dir(input_root):
-	predict_base = os.path.join(input_root, "predict")
-	predict_dirs = glob.glob(os.path.join(input_root, "predict*"))
+def candidate_output_dirs(input_root):
+	ordered, seen = [], set()
+
+	clip_predict = os.path.join(input_root, "clip_predict")
+	if os.path.isdir(clip_predict):
+		ordered.append(clip_predict); seen.add(clip_predict)
+
 	numbered = []
-	for path in predict_dirs:
-		name = os.path.basename(path)
-		match = re.fullmatch(r"predict[-_]?(\d+)", name)
+	for path in glob.glob(os.path.join(input_root, "predict*")):
+		if not os.path.isdir(path):
+			continue
+		match = re.fullmatch(r"predict[-_]?(\d+)", os.path.basename(path))
 		if match:
 			numbered.append((int(match.group(1)), path))
-	if numbered:
-		return max(numbered, key=lambda item: item[0])[1]
-	if os.path.isdir(predict_base):
-		return predict_base
-	return ""
+	for _, path in sorted(numbered, key=lambda x: x[0], reverse=True):
+		if path not in seen:
+			ordered.append(path); seen.add(path)
+
+	predict_dir = os.path.join(input_root, "predict")
+	if os.path.isdir(predict_dir) and predict_dir not in seen:
+		ordered.append(predict_dir); seen.add(predict_dir)
+
+	for path in sorted(glob.glob(os.path.join(input_root, "*"))):
+		if os.path.isdir(path) and path not in seen:
+			ordered.append(path); seen.add(path)
+	return ordered
 ```
 
 ### 2) Robust video selection for Q&A
 ```python
-if "compressed_video" in globals() and os.path.isfile(compressed_video):
-	video_path = compressed_video
-elif "output_video" in globals() and os.path.isfile(output_video):
+if "output_video" in globals() and os.path.isfile(output_video):
 	video_path = output_video
 elif "input_video" in globals() and os.path.isfile(input_video):
 	video_path = input_video
@@ -104,10 +115,9 @@ if not answer:
 ```
 
 ## Outputs
-- Step 2 video: `runs_output/detect/clip_predict/annotated_video.mp4`
-- Step 3 captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
-- Optional compressed video: `runs_output/detect/<selected_output_dir>/vlm_overlay/converted_mp4/*_compressed.mp4`
-- Log/report file: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm_log.md`
+- Stage 1 (optional) compressed YOLO video: `runs_output/detect/predict*/converted_mp4/*_compressed.mp4` (produced by the Stage 1 `ffmpeg` cell).
+- Stage 2 video: `runs_output/detect/clip_predict/annotated_video.mp4`
+- Stage 3 captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
 
 ## Notes
 - Q&A uses one selected frame per timestamp (single-frame reasoning).
