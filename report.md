@@ -1,21 +1,33 @@
 
-# Project Report — YOLO + VLM Captioned Dashcam Demo
+# Project Report — YOLO + CLIP + VLM Captioned Dashcam Demo
+
+> **Final deliverable:** PDF presentation (slides exported from this report + figures + demo video stills/clips). Code/notebooks are operational; DevOps (env pinning, repro scripts, dataset hygiene) is still ongoing.
 
 ## 1. Project Summary
-This project combines YOLO detection with a local Vision Language Model (VLM) to create a captioned dashcam demo. The pipeline is designed for reproducibility and presentation use: it generates an annotated video, optional compressed export, and text logs.
+This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to produce a captioned dashcam demo. The pipeline is designed for reproducibility and presentation use: it generates an annotated video, an optional compressed export, and Markdown logs.
 
 ## 2. Objectives
-- Detect driving-scene objects with YOLO.
+- Detect driving-scene objects with YOLO (11 self-driving classes).
+- Add per-vehicle car-brand recognition via CLIP image embeddings + a trained linear probe.
 - Add VLM-based scene understanding and audience-friendly captions.
 - Provide a simple Q&A interface for selected timestamps.
-- Export compact outputs suitable for reports and slides.
+- Export compact outputs suitable for the final PDF presentation.
 
 ## 3. Data and Environment
-- Dataset: Self-Driving-Car-3 (kept locally; not intended for git upload).
-- Inference outputs: `runs_output/detect/predict*`.
-- VLM runtime: Ollama + `qwen3-vl:4b` (local).
+- **YOLO dataset:** Self-Driving-Car-3 (Roboflow), 11 classes (`biker, car, pedestrian, trafficLight*, truck`); kept locally, not pushed to git.
+- **CLIP probe dataset:** 20-class car-brand image set (European-biased: Audi, BMW, Chevrolet, Citroen, Dacia, Fiat, Ford, Honda, Hyundai, Kia, Mercedes, Nissan, Opel, Peugeot, Renault, Seat, Skoda, Tofaş, Toyota, Volkswagen). Probe trained on Kaggle.
+- **Artifacts:** `weights/yolo/best.pt`, `weights/clip/linear_probe/{linear_probe_weights.pt, class_names.json, config.json}`.
+- **Inference outputs:** `runs_output/detect/clip_predict/` (Stage 2 video) and `runs_output/detect/.../vlm_overlay/` (Stage 3 video + log).
+- **VLM runtime:** Ollama + `qwen3-vl:4b` (local).
 
 ## 4. Implemented Pipeline
+
+### 4.0 Stage Map
+- **Stage 1 — YOLO fine-tune** (`my_yolo_selfdriving_local.ipynb`): `yolov10n.pt` → fine-tune (`imgsz=512`, `batch=16`, `epochs=30`, `patience=10`) → eval (`model.val()` for P/R/mAP@0.5/mAP@0.5:0.95) → export `weights/yolo/best.pt`.
+- **Stage 2a — CLIP linear probe** (`clip-car-classification-with-linear-probe.ipynb`): freeze OpenCLIP `ViT-B-32`/`laion2b_s34b_b79k`, cache image embeddings once, train `nn.Linear(512, 20)` (Adam `lr=1e-3`, `wd=1e-4`, early stop `patience=7`, 70/15/15 stratified split) → export to `weights/clip/linear_probe/`.
+- **Stage 2b — YOLO+CLIP video** (`use_finetuned_yolo_and_clip_on_video.ipynb`): per frame YOLO `conf=0.4`; for each detection where `class == "car"` and crop ≥ 80×80, crop → CLIP → L2-normalize → linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
+- **Stage 3 — VLM caption + Q&A** (`my_yolo_vlm_step3.ipynb`): local `qwen3-vl:4b` via Ollama; adaptive captioning (gray-frame `absdiff().mean() ≥ 12.0` AND ≥ `5.0 s` since last caption); banner overlay; Q&A widget seeks by frame index, single-frame reasoning, fallback retry on empty response.
+
 ### 4.1 Detection and Input Resolution
 - YOLO outputs are read from `runs_output/detect`.
 - The system prefers the highest numeric folder (`predict-N`) for deterministic behavior.
@@ -58,8 +70,28 @@ ret, frame = cap.read()
 - Prompting behavior improved from rigid template to smarter, question-first style.
 - Response speed and stability improved with bounded generation and fallback handling.
 
-## 7. Known Limits and Next Sections
-- Single-frame Q&A can miss temporal context.
-- Exact vehicle brand/model is often uncertain from dashcam distance and resolution.
-- Future sections planned: temporal reasoning, YOLO-vs-VLM object consistency scoring, and final evaluation metrics.
+## 7. Known Limits
+- **Stage 2b labeling**: brand confidence is not thresholded — even a ~5 % top-1 brand is drawn on the box.
+- **Stage 2b coverage**: only `class == "car"` triggers CLIP, so trucks (and other vehicle-like detections) are excluded by design.
+- **No tracking**: no per-vehicle ID across frames → brand labels flicker even when YOLO is stable.
+- **Domain mismatch**: linear probe was trained on well-framed brand photos and is applied to small / oblique / motion-blurred dashcam crops → noisy outputs.
+- **CLIP not batched**: one crop at a time per frame.
+- **Stage 3 banner**: hardcoded font/thickness sized for very large frames; oversized on 720p/1080p.
+- **Brand list**: 20 European-leaning brands only (no Tesla, Subaru, Mazda, Lexus, …).
+- **Single-frame Q&A**: misses temporal context (motion, intent, signal transitions).
+- **Exact model identification** from dashcam distance/resolution is often not visually verifiable.
+
+## 8. DevOps Backlog (in progress)
+- Add a pinned `requirements.txt` (Ultralytics, open_clip_torch, ollama, scikit-learn, opencv-python, ipywidgets, Pillow, tqdm).
+- Confirm `.gitignore` excludes `Self-Driving-Car-3/`, `runs_output/`, `original_videos/`, `.venv/` and large weights as appropriate.
+- Add a thin `make demo` / shell script wrapping Stage 2b → Stage 3 for one-command reruns.
+- Optional: package the Q&A widget as a small Gradio app for the live demo.
+
+## 9. Next Sections (planned)
+- Add tracking (`model.track(..., tracker="bytetrack.yaml")`) and per-track brand smoothing (majority vote / EMA on logits).
+- Apply a brand-confidence threshold (e.g., ≥ 0.5) before drawing the brand label; fall back to `"car"`.
+- Extend CLIP-trigger to `truck` and other vehicle classes; consider a "vehicle vs not" gate.
+- Auto-scale banner font from `frame.shape` so the overlay looks consistent across resolutions.
+- Add a YOLO-vs-VLM object-consistency check (do detected classes appear in the VLM caption?) as a sanity metric.
+- Final evaluation tables + figures for the PDF presentation: training curves, confusion matrix, per-class F1, qualitative frames.
 
