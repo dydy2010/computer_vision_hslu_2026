@@ -118,6 +118,7 @@ if not answer:
 - Stage 1 (optional) compressed YOLO video: `runs_output/detect/predict*/converted_mp4/*_compressed.mp4` (produced by the Stage 1 `ffmpeg` cell).
 - Stage 2 video: `runs_output/detect/clip_predict/annotated_video.mp4`
 - Stage 3 captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
+  (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
 
 ## Notes
 - Q&A uses one selected frame per timestamp (single-frame reasoning).
