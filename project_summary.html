@@ -79,20 +79,21 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="project-aim" class="level1">
 <h1>Project aim</h1>
-<p>The objective of the project is be able to annotate traffic videos. These annotated videos could serve as demo for self-driving cars marketing by showing the detection of other cars and trucks, as well as traffic lights and pedestrian, to increase the customers confidence in the cars self-driving algorithms. The first clients are expected to be sligtly geek. Therefore, the cars brands are also detected to boost the ludic aspect of the video.</p>
-<p>In order to develop this tool, the following sub-objectives were identified:</p>
+<p>The goal of this project is to automatically annotate traffic videos. These annotated videos could be used as demonstration material for self-driving car marketing by highlighting the detection of surrounding vehicles, traffic lights, and pedestrians. The objective is to help increase customer confidence in self-driving technologies.</p>
+<p>The first target users are expected to be relatively tech-oriented. For this reason, car-brand recognition was also added to make the videos more engaging and entertaining.</p>
+<p>To achieve this goal, the following sub-objectives were identified:</p>
 <ul>
 <li>Detect driving-scene objects</li>
-<li>Per-vehicle car-brand recognition</li>
-<li>Scene and audience-friendly captions</li>
-<li>Simple Q&amp;A interface for selected timestamps</li>
+<li>Recognize car brands for each detected vehicle</li>
+<li>Generate scene captions for viewers</li>
+<li>Provide a simple Q&amp;A interface for selected timestamps</li>
 </ul>
 </section>
 <section id="project-structure" class="level1">
 <h1>Project structure</h1>
 <section id="detect-driving-scene-objects" class="level2">
 <h2 class="anchored" data-anchor-id="detect-driving-scene-objects">Detect driving-scene objects</h2>
-<p>A YOLOv10 model is used to detect pre-defined objects. The model is fine-tuned on an annotated data set. With the chosen data set, 11 object classes are available:</p>
+<p>A YOLOv10 model is used to detect predefined objects in driving scenes. The model is fine-tuned on an annotated dataset. With the selected dataset, 11 object classes are available:</p>
 <ul>
 <li>biker</li>
 <li>car</li>
@@ -106,41 +107,44 @@ ul.task-list li input[type="checkbox"] {
 <li>trafficLight-YellowLeft</li>
 <li>truck</li>
 </ul>
-<p>The labels and bounding boxes are displayed on the test pictures and on the test videos.</p>
+<p>The resulting labels and bounding boxes are displayed on both test images and test videos.</p>
 </section>
 <section id="per-vehicle-car-brand-recognition" class="level2">
 <h2 class="anchored" data-anchor-id="per-vehicle-car-brand-recognition">Per-vehicle car-brand recognition</h2>
-<p>An open-CLIP model is assessed on a car brands data set. A linear probe is then trained on top of the open-CLIP model using the same car brands data set. Its performances are then tested too.</p>
-<p>Based on the output of the YOLO model CLIP-model, the car brands are determined using a CLIP-model. During the YOLOv10 classification, if the output class of a bounding box is “car”, the bounding box is cropped out of the picture and transferred to the CLIP-model, along with the names of all the brands for which the CLIP-model was fine-tuned. The brand is then determined as being the brand with the highest softmax. However, a minimum treshold must be met for the car brand to be taken in consideration. If the treshold is not met, the bounding box label remains a simple “car” on the video output.</p>
+<p>An OpenCLIP model is evaluated on a car-brand dataset. A linear probe is then trained on top of the OpenCLIP embeddings using the same dataset, and its performance is evaluated as well.</p>
+<p>Based on the output of the YOLO model, car brands are predicted using the CLIP-based classifier. Whenever YOLO detects an object classified as a “car”, the corresponding bounding box is cropped from the image and passed to the CLIP model. The model then predicts the most likely brand among the brands used during fine-tuning.</p>
+<p>The final prediction is selected using the highest softmax score. However, a minimum confidence threshold must be reached before displaying the predicted brand. If the threshold is not met, the label shown on the output video remains simply “car”.</p>
 </section>
 <section id="scene-and-audience-friendly-captions" class="level2">
 <h2 class="anchored" data-anchor-id="scene-and-audience-friendly-captions">Scene and audience-friendly captions</h2>
-<p>A VLM based on Ollama is used to add captions on the video. A new caption is generated if the frame changed enough from the previous one or if enough time has passed since the last caption. The aim is to avoid generating too many very similar captions.</p>
+<p>A Vision Language Model (VLM) running locally through Ollama is used to generate captions for the video. A new caption is created only if the current frame differs enough from the previous one or if enough time has passed since the last caption was generated.</p>
+<p>This approach helps avoid producing too many repetitive captions while still providing useful scene descriptions.</p>
 </section>
 <section id="simple-qa-interface-for-selected-timestamps" class="level2">
 <h2 class="anchored" data-anchor-id="simple-qa-interface-for-selected-timestamps">Simple Q&amp;A interface for selected timestamps</h2>
-<p>Single frames can be extracted based on their timestamp. They are given to the VLM that can generate a caption or answer to a user’s question. This is done through a single user interface embedded in a jupyter notebook.</p>
+<p>Single frames can be extracted from the video based on a selected timestamp. These frames are then passed to the VLM, which can either generate a caption or answer a user’s question about the scene.</p>
+<p>This functionality is implemented through a simple user interface embedded directly in a Jupyter notebook.</p>
 </section>
 </section>
 <section id="data" class="level1">
 <h1>Data</h1>
 <ul>
-<li><a href="https://public.roboflow.com/object-detection/self-driving-car">Self-driving videos with YOLO compatible annotations</a>
+<li><a href="https://public.roboflow.com/object-detection/self-driving-car">Self-driving videos with YOLO-compatible annotations</a>
 <ul>
 <li>contains 11 classes</li>
-<li>published by roboflow</li>
-<li>contains annotated 15,000 pictures (??)</li>
+<li>published by Roboflow</li>
+<li>contains approximately 15,000 annotated images</li>
 </ul></li>
-<li><a href="https://www.kaggle.com/datasets/smlztrkk/car-images-dataset">Car brand data set</a>
+<li><a href="https://www.kaggle.com/datasets/smlztrkk/car-images-dataset">Car brand dataset</a>
 <ul>
-<li>contains 20 brands</li>
-<li>a few models per brand, but for this projects only the car brand was considered</li>
-<li>contains a total of 87,000 pictures, between 350 and 14,000 picture per brand</li>
+<li>contains 20 car brands</li>
+<li>includes several models per brand, although only the brand information was used in this project</li>
+<li>contains approximately 87,000 images, with between 350 and 14,000 images per brand</li>
 </ul></li>
 </ul>
 </section>
-<section id="further-possible-developments-not-sure-we-should-include-this-in-the-project-summary" class="level1">
-<h1>Further possible developments (not sure we should include this in the project summary…)</h1>
+<section id="further-possible-developments-not-sure-if-we-want-to-include-this" class="level1">
+<h1>Further possible developments (not sure if we want to include this…)</h1>
 </section>
 
 </main>

@@ -7,18 +7,23 @@ date: "today"
 ---
 
 # Project aim
-The objective of the project is be able to annotate traffic videos. These annotated videos could serve as demo for self-driving cars marketing by showing the detection of other cars and trucks, as well as traffic lights and pedestrian, to increase the customers confidence in the cars self-driving algorithms. The first clients are expected to be sligtly geek. Therefore, the cars brands are also detected to boost the ludic aspect of the video.
 
-In order to develop this tool, the following sub-objectives were identified:
+The goal of this project is to automatically annotate traffic videos. These annotated videos could be used as demonstration material for self-driving car marketing by highlighting the detection of surrounding vehicles, traffic lights, and pedestrians. The objective is to help increase customer confidence in self-driving technologies.
+
+The first target users are expected to be relatively tech-oriented. For this reason, car-brand recognition was also added to make the videos more engaging and entertaining.
+
+To achieve this goal, the following sub-objectives were identified:
 
 - Detect driving-scene objects
-- Per-vehicle car-brand recognition
-- Scene and audience-friendly captions
-- Simple Q&A interface for selected timestamps
+- Recognize car brands for each detected vehicle
+- Generate scene captions for viewers
+- Provide a simple Q&A interface for selected timestamps
 
 # Project structure
+
 ## Detect driving-scene objects
-A YOLOv10 model is used to detect pre-defined objects. The model is fine-tuned on an annotated data set. With the chosen data set, 11 object classes are available:
+
+A YOLOv10 model is used to detect predefined objects in driving scenes. The model is fine-tuned on an annotated dataset. With the selected dataset, 11 object classes are available:
 
 - biker
 - car
@@ -32,29 +37,38 @@ A YOLOv10 model is used to detect pre-defined objects. The model is fine-tuned o
 - trafficLight-YellowLeft
 - truck
 
-The labels and bounding boxes are displayed on the test pictures and on the test videos.
+The resulting labels and bounding boxes are displayed on both test images and test videos.
 
 ## Per-vehicle car-brand recognition
-An open-CLIP model is assessed on a car brands data set. A linear probe is then trained on top of the open-CLIP model using the same car brands data set. Its performances are then tested too.
 
-Based on the output of the YOLO model CLIP-model, the car brands are determined using a CLIP-model. During the YOLOv10 classification, if the output class of a bounding box is "car", the bounding box is cropped out of the picture and transferred to the CLIP-model, along with the names of all the brands for which the CLIP-model was fine-tuned. The brand is then determined as being the brand with the highest softmax. However, a minimum treshold must be met for the car brand to be taken in consideration. If the treshold is not met, the bounding box label remains a simple "car" on the video output.
+An OpenCLIP model is evaluated on a car-brand dataset. A linear probe is then trained on top of the OpenCLIP embeddings using the same dataset, and its performance is evaluated as well.
+
+Based on the output of the YOLO model, car brands are predicted using the CLIP-based classifier. Whenever YOLO detects an object classified as a "car", the corresponding bounding box is cropped from the image and passed to the CLIP model. The model then predicts the most likely brand among the brands used during fine-tuning.
+
+The final prediction is selected using the highest softmax score. However, a minimum confidence threshold must be reached before displaying the predicted brand. If the threshold is not met, the label shown on the output video remains simply "car".
 
 ## Scene and audience-friendly captions
-A VLM based on Ollama is used to add captions on the video. A new caption is generated if the frame changed enough from the previous one or if enough time has passed since the last caption. The aim is to avoid generating too many very similar captions.
+
+A Vision Language Model (VLM) running locally through Ollama is used to generate captions for the video. A new caption is created only if the current frame differs enough from the previous one or if enough time has passed since the last caption was generated.
+
+This approach helps avoid producing too many repetitive captions while still providing useful scene descriptions.
 
 ## Simple Q&A interface for selected timestamps
-Single frames can be extracted based on their timestamp. They are given to the VLM that can generate a caption or answer to a user's question. This is done through a single user interface embedded in a jupyter notebook.
+
+Single frames can be extracted from the video based on a selected timestamp. These frames are then passed to the VLM, which can either generate a caption or answer a user’s question about the scene.
+
+This functionality is implemented through a simple user interface embedded directly in a Jupyter notebook.
 
 # Data
 
-- [Self-driving videos with YOLO compatible annotations](https://public.roboflow.com/object-detection/self-driving-car)
+- [Self-driving videos with YOLO-compatible annotations](https://public.roboflow.com/object-detection/self-driving-car)
     - contains 11 classes
-    - published by roboflow
-    - contains annotated 15,000 pictures (??)
-- [Car brand data set](https://www.kaggle.com/datasets/smlztrkk/car-images-dataset)
-    - contains 20 brands
-    - a few models per brand, but for this projects only the car brand was considered
-    - contains a total of 87,000 pictures, between 350 and 14,000 picture per brand
+    - published by Roboflow
+    - contains approximately 15,000 annotated images
 
+- [Car brand dataset](https://www.kaggle.com/datasets/smlztrkk/car-images-dataset)
+    - contains 20 car brands
+    - includes several models per brand, although only the brand information was used in this project
+    - contains approximately 87,000 images, with between 350 and 14,000 images per brand
 
-# Further possible developments (not sure we should include this in the project summary...)
+# Further possible developments (not sure if we want to include this...)
