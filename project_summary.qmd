@@ -1,0 +1,60 @@
+---
+title: "Computer Vision Project"
+format: html
+authors: "Dongyuan Gao & Solène Cosandey"
+description-title: "Self-driving car project"
+date: "today"
+---
+
+# Project aim
+The objective of the project is be able to annotate traffic videos. These annotated videos could serve as demo for self-driving cars marketing by showing the detection of other cars and trucks, as well as traffic lights and pedestrian, to increase the customers confidence in the cars self-driving algorithms. The first clients are expected to be sligtly geek. Therefore, the cars brands are also detected to boost the ludic aspect of the video.
+
+In order to develop this tool, the following sub-objectives were identified:
+
+- Detect driving-scene objects
+- Per-vehicle car-brand recognition
+- Scene and audience-friendly captions
+- Simple Q&A interface for selected timestamps
+
+# Project structure
+## Detect driving-scene objects
+A YOLOv10 model is used to detect pre-defined objects. The model is fine-tuned on an annotated data set. With the chosen data set, 11 object classes are available:
+
+- biker
+- car
+- pedestrian
+- trafficLight
+- trafficLight-Green
+- trafficLight-GreenLeft
+- trafficLight-Red
+- trafficLight-RedLeft
+- trafficLight-Yellow
+- trafficLight-YellowLeft
+- truck
+
+The labels and bounding boxes are displayed on the test pictures and on the test videos.
+
+## Per-vehicle car-brand recognition
+An open-CLIP model is assessed on a car brands data set. A linear probe is then trained on top of the open-CLIP model using the same car brands data set. Its performances are then tested too.
+
+Based on the output of the YOLO model CLIP-model, the car brands are determined using a CLIP-model. During the YOLOv10 classification, if the output class of a bounding box is "car", the bounding box is cropped out of the picture and transferred to the CLIP-model, along with the names of all the brands for which the CLIP-model was fine-tuned. The brand is then determined as being the brand with the highest softmax. However, a minimum treshold must be met for the car brand to be taken in consideration. If the treshold is not met, the bounding box label remains a simple "car" on the video output.
+
+## Scene and audience-friendly captions
+A VLM based on Ollama is used to add captions on the video. A new caption is generated if the frame changed enough from the previous one or if enough time has passed since the last caption. The aim is to avoid generating too many very similar captions.
+
+## Simple Q&A interface for selected timestamps
+Single frames can be extracted based on their timestamp. They are given to the VLM that can generate a caption or answer to a user's question. This is done through a single user interface embedded in a jupyter notebook.
+
+# Data
+
+- [Self-driving videos with YOLO compatible annotations](https://public.roboflow.com/object-detection/self-driving-car)
+    - contains 11 classes
+    - published by roboflow
+    - contains annotated 15,000 pictures (??)
+- [Car brand data set](https://www.kaggle.com/datasets/smlztrkk/car-images-dataset)
+    - contains 20 brands
+    - a few models per brand, but for this projects only the car brand was considered
+    - contains a total of 87,000 pictures, between 350 and 14,000 picture per brand
+
+
+# Further possible developments (not sure we should include this in the project summary...)
