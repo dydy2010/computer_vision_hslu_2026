@@ -1,23 +1,35 @@
 ---
 title: "Computer Vision Project"
-format: html
-authors: "Dongyuan Gao & Solène Cosandey"
-description-title: "Self-driving car project"
+author: "Dongyuan Gao & Solène Cosandey"
 date: "today"
+format:
+  typst:
+    margin:
+      x: 1.8cm
+      y: 1.6cm
+    fontsize: 10pt
+    section-numbering: ""
+    keep-typ: false
 ---
 
 # Project aim
 
 This project is, first and foremost, a learning exercise: as computer-vision beginners, we wanted to try out several of the modern computer-vision techniques we studied in class, brought together as one coherent video pipeline rather than as separate isolated experiments.
 
-Concretely, the project addresses **traffic-video scene understanding for a non-technical audience**. Given a short dashcam clip, the pipeline produces an annotated video that
+Concretely, this project is to automatically detect objects in traffic videos and explain the detected objects and traffic scenes. The annotated videos could be used as demonstration material for self-driving car marketing by highlighting surrounding vehicles, traffic lights, and pedestrians, etc. The objective is to help increase customer confidence in self-driving technologies in an intuitive way.
+The pipeline is as planned:
 
 - detects relevant traffic objects (vehicles, pedestrians, traffic lights, …),
 - optionally tags individual cars with a brand label when the classifier is confident enough,
-- narrates the driving scene with short, audience-friendly captions,
-- and answers viewer questions about any selected moment in the clip.
+- generate audience-friendly captions on video (traffic scene),
+- provide a simple Q&A interface for selected timestamps.
 
 The intended use is educational and explainer contexts — for example, showing how several computer-vision components can together describe what is happening on the road in a way an everyday viewer can follow.
+
+# Data
+
+- [Self-driving videos with YOLO-compatible annotations](https://public.roboflow.com/object-detection/self-driving-car) — a public Roboflow dataset of annotated traffic scenes covering the relevant object classes (vehicles, pedestrians, traffic lights, …).
+- [Car brand dataset](https://www.kaggle.com/datasets/smlztrkk/car-images-dataset) — a public Kaggle dataset of car images grouped by brand, used to train the brand classifier.
 
 # Approach
 
@@ -25,15 +37,6 @@ To realise this use case we combine three families of pretrained computer-vision
 
 Concretely, we use YOLO for detection, OpenCLIP for brand classification, and a local vision-language model (Qwen3-VL via Ollama) for narration and Q&A. A working prototype across these stages is already implemented and runs end-to-end on a dashcam clip. Further methodological choices, comparisons and quantitative evaluation are reserved for the final report.
 
-# Data
+# Example outcome
 
-- [Self-driving videos with YOLO-compatible annotations](https://public.roboflow.com/object-detection/self-driving-car) — a public Roboflow dataset of annotated traffic scenes covering the relevant object classes (vehicles, pedestrians, traffic lights, …).
-- [Car brand dataset](https://www.kaggle.com/datasets/smlztrkk/car-images-dataset) — a public Kaggle dataset of car images grouped by brand, used to train the brand classifier.
-
-# Scope and expectations
-
-Because this is a beginner project, the priority is a clean, end-to-end working demo rather than benchmark-leading numbers on any single component. In particular, car-brand recognition is noisy by nature: the classifier is trained on well-framed brand photos but applied to small, oblique and motion-blurred dashcam crops, so a confidence threshold is used and the label falls back to a generic "car" when the model is unsure. Likewise, captions are deliberately sparse — updated only when the scene changes meaningfully — so that the output stays readable rather than overwhelming the viewer.
-
-# Possible extensions
-
-If time allows, we plan to investigate per-vehicle tracking with temporal smoothing of brand labels, a larger and more geographically diverse brand vocabulary, and alternative classification backbones. The exact set of extensions, together with their evaluation, will be documented in the final report.
+A successful run produces a single annotated dashcam clip that a non-technical viewer can follow end-to-end. Vehicles, pedestrians and traffic lights are boxed and labelled in real time; confidently recognised cars carry a brand tag (e.g. *Toyota*, *BMW*), while less certain ones stay as a generic *car*. A short caption in the corner of the frame describes the current scene in plain language — for example, *"a car is waiting at a red light while pedestrians cross"* — and refreshes only when the scene meaningfully changes, keeping the overlay calm and readable. After watching, the viewer can pause at any moment and ask a question about that frame (*"what colour is the traffic light?"*, *"how many cars are visible?"*) and receive a short natural-language answer. The intended takeaway is an intuitive, marketing-style demonstration of how multiple computer-vision components can jointly describe a driving scene to a general audience.
