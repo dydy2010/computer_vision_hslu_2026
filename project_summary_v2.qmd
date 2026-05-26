@@ -1,0 +1,39 @@
+---
+title: "Computer Vision Project"
+format: html
+authors: "Dongyuan Gao & Solène Cosandey"
+description-title: "Self-driving car project"
+date: "today"
+---
+
+# Project aim
+
+This project is, first and foremost, a learning exercise: as computer-vision beginners, we wanted to try out several of the modern computer-vision techniques we studied in class, brought together as one coherent video pipeline rather than as separate isolated experiments.
+
+Concretely, the project addresses **traffic-video scene understanding for a non-technical audience**. Given a short dashcam clip, the pipeline produces an annotated video that
+
+- detects relevant traffic objects (vehicles, pedestrians, traffic lights, …),
+- optionally tags individual cars with a brand label when the classifier is confident enough,
+- narrates the driving scene with short, audience-friendly captions,
+- and answers viewer questions about any selected moment in the clip.
+
+The intended use is educational and explainer contexts — for example, showing how several computer-vision components can together describe what is happening on the road in a way an everyday viewer can follow.
+
+# Approach
+
+To realise this use case we combine three families of pretrained computer-vision models: an object detector for traffic objects, a pretrained vision encoder used as a feature extractor for car-brand classification, and a vision-language model for scene narration and frame-level question answering.
+
+Concretely, we use YOLO for detection, OpenCLIP for brand classification, and a local vision-language model (Qwen3-VL via Ollama) for narration and Q&A. A working prototype across these stages is already implemented and runs end-to-end on a dashcam clip. Further methodological choices, comparisons and quantitative evaluation are reserved for the final report.
+
+# Data
+
+- [Self-driving videos with YOLO-compatible annotations](https://public.roboflow.com/object-detection/self-driving-car) — a public Roboflow dataset of annotated traffic scenes covering the relevant object classes (vehicles, pedestrians, traffic lights, …).
+- [Car brand dataset](https://www.kaggle.com/datasets/smlztrkk/car-images-dataset) — a public Kaggle dataset of car images grouped by brand, used to train the brand classifier.
+
+# Scope and expectations
+
+Because this is a beginner project, the priority is a clean, end-to-end working demo rather than benchmark-leading numbers on any single component. In particular, car-brand recognition is noisy by nature: the classifier is trained on well-framed brand photos but applied to small, oblique and motion-blurred dashcam crops, so a confidence threshold is used and the label falls back to a generic "car" when the model is unsure. Likewise, captions are deliberately sparse — updated only when the scene changes meaningfully — so that the output stays readable rather than overwhelming the viewer.
+
+# Possible extensions
+
+If time allows, we plan to investigate per-vehicle tracking with temporal smoothing of brand labels, a larger and more geographically diverse brand vocabulary, and alternative classification backbones. The exact set of extensions, together with their evaluation, will be documented in the final report.
