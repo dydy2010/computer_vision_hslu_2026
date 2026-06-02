@@ -128,5 +128,6 @@ Per-class validation metrics (from cell output):
 - Extend CLIP-trigger to `truck` and other vehicle classes; consider a "vehicle vs not" gate.
 - Auto-scale banner font from `frame.shape` so the overlay looks consistent across resolutions.
 - Add a YOLO-vs-VLM object-consistency check (do detected classes appear in the VLM caption?) as a sanity metric.
+- Stage 4 — Semantic Segmentation: pretrained SegFormer-B5 on Cityscapes, pixel-level mask overlay (`runs_output/segmentation/cityscapes_segmented.mp4`). Side-by-side YOLO boxes vs. segmentation mask for the final PDF presentation.
 - Final evaluation tables + figures for the PDF presentation: training curves, confusion matrix, per-class F1, qualitative frames.
 

@@ -6,6 +6,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 
 ## What This Project Does
 - Runs YOLO on driving video and saves outputs under `runs_output/detect/predict*`.
+- Adds pixel-level semantic segmentation with a pretrained SegFormer-B5 (Cityscapes) for street-scene masks.
 - Stores canonical model artifacts under `weights/yolo/` and `weights/clip/linear_probe/`.
 - Adds VLM captions using local Ollama (`qwen3-vl:4b`).
 - Supports quick frame-based Q&A for audience/demo usage.
@@ -35,6 +36,14 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - Adaptive captioning gate: gray-frame `absdiff().mean() ≥ CAPTION_DIFF_THRESHOLD (12.0)` **and** elapsed ≥ `CAPTION_MIN_SEC (5.0)`. Switch to fixed-interval mode with `CAPTION_MODE=fixed` and `CAPTION_EVERY_SEC`.
 - Q&A widget seeks by frame index (`fps * sec`), sends one frame, falls back with a simpler prompt if the model returns empty, guards against duplicate clicks.
 
+**Stage 4 — Semantic Segmentation** (`04_semantic_segmentation.ipynb`)
+- Pretrained `nvidia/segformer-b5-finetuned-cityscapes-1024-1024` via Hugging Face Transformers (~84.7M params, 84.0% mIoU on Cityscapes).
+- Hybrid architecture: Vision Transformer encoder for global context + lightweight MLP decoder for sharp pixel boundaries.
+- Full 30-class Cityscapes palette (road, sidewalk, building, vegetation, sky, person, car, truck, bus, etc.).
+- Nearest-neighbor upsampling preserves class boundaries; alpha-blended overlay on original video.
+- Output: `runs_output/segmentation/cityscapes_segmented.mp4`.
+- Not real-time by design — quality demonstration; real-time detection is handled by Stages 1/2b.
+
 ## Known Caveats / Things to Improve (DevOps + quality backlog)
 - **Stage 2b** uses a hardcoded YOLO `conf=0.4`; brand confidence is **never thresholded**, so even a ~5 % top-1 brand is drawn on the box.
 - **Stage 2b** runs CLIP only on `class_name == "car"`, so `truck` (and any other vehicle-like class) is excluded by design even though brand prediction would still be meaningful.
@@ -51,6 +60,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - `02a_clip_probe_train.ipynb`: trains/evaluates the CLIP linear probe and exports probe artifacts (`linear_probe_weights.pt`, `class_names.json`, `config.json`). This is an asset-building notebook, not the normal runtime demo notebook.
 - `02b_yolo_clip_video.ipynb`: final Step 2 runtime notebook. It loads the already-trained YOLO and CLIP assets, runs one input video, and writes a CLIP-enriched output video to `runs_output/detect/clip_predict/`.
 - `03_vlm_caption.ipynb`: final Step 3 runtime notebook. It adds VLM captions and Q&A on top of the Step 2 or Step 1 output video.
+- `04_semantic_segmentation.ipynb`: Stage 4 runtime notebook. Loads pretrained SegFormer-B5, processes the original dashcam video frame-by-frame, and writes a color-mask overlay.
 
 ## Final Demo Workflow
 1. If YOLO weights already exist in `weights/yolo/`, skip `01_yolo_finetune.ipynb`.
@@ -61,6 +71,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 	- setup/import cells,
 	- caption generation cell,
 	- Q&A cell.
+6. (Optional) Run `04_semantic_segmentation.ipynb` to produce a pixel-level Cityscapes segmentation overlay: `runs_output/segmentation/cityscapes_segmented.mp4`.
 
 ## Important Learning Snippets
 
@@ -119,6 +130,7 @@ if not answer:
 - Stage 2 video: `runs_output/detect/clip_predict/annotated_video.mp4`
 - Stage 3 captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
   (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
+- Stage 4 segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4`
 
 ## Notes
 - Q&A uses one selected frame per timestamp (single-frame reasoning).
