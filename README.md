@@ -27,7 +27,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - Exports `linear_probe_weights.pt`, `class_names.json`, `config.json` → `weights/clip/linear_probe/`.
 
 **Stage 2b — YOLO + CLIP video pipeline** (`02b_yolo_clip_video.ipynb`)
-- Per frame: YOLO `conf=0.4` → for every detection where `class_name.lower() == "car"` and crop ≥ 80×80 px, crop, run CLIP backbone, L2-normalize, push through linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Truck detections are intentionally excluded from brand classification because the linear probe was trained on car-only images; truck crops are out-of-distribution.
+- Per frame: YOLO `conf=0.2` → for every detection where `class_name.lower() == "car"` and crop ≥ 80×80 px, crop, run CLIP backbone, L2-normalize, push through linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Truck detections are intentionally excluded from brand classification because the linear probe was trained on car-only images; truck crops are out-of-distribution.
 - Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
 
 **Stage 3 — VLM caption + Q&A** (`03_vlm_caption.ipynb`)
@@ -45,7 +45,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - Not real-time by design — quality demonstration; real-time detection is handled by Stages 1/2b.
 
 ## Known Caveats / Things to Improve (DevOps + quality backlog)
-- **Stage 2b** uses a hardcoded YOLO `conf=0.4`; brand confidence is **never thresholded**, so even a ~5 % top-1 brand is drawn on the box.
+- **Stage 2b** uses a hardcoded YOLO `conf=0.2` (lowered from 0.4 to catch more distant cars); brand confidence is **never thresholded**, so even a ~5 % top-1 brand is drawn on the box.
 - **Stage 2b** runs CLIP only on `class_name == "car"`, so `truck` (and any other vehicle-like class) is excluded by design even though brand prediction would still be meaningful.
 - **No tracking** in Stage 2b → labels flicker per frame for the same vehicle. ByteTrack + per-track majority/EMA on brand logits would stabilize labels significantly.
 - **Domain mismatch** for the linear probe: trained on well-framed brand photos, applied to small/oblique/blurred dashcam crops — expect noisy brand outputs and use confidence thresholds + smoothing before trusting them.
