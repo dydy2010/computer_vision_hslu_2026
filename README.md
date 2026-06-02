@@ -14,7 +14,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 ## Pipeline Architecture (verified)
 
 **Stage 1 — YOLO fine-tuning** (`my_yolo_selfdriving_local.ipynb`)
-- Backbone `yolov10n.pt` (COCO-pretrained), fine-tuned on `Self-Driving-Car-3` (11 classes: `biker, car, pedestrian, trafficLight, trafficLight-Green/-GreenLeft/-Red/-RedLeft/-Yellow/-YellowLeft, truck`).
+- Backbone `yolo26s.pt` (COCO-pretrained), fine-tuned on `Self-Driving-Car-3` (11 classes: `biker, car, pedestrian, trafficLight, trafficLight-Green/-GreenLeft/-Red/-RedLeft/-Yellow/-YellowLeft, truck`).
 - Training: `imgsz=512`, `batch=16`, `epochs=30`, `patience=10`, output to `runs_output/detect/selfdriving_v1/`.
 - Eval cell runs `model.val()` for precision / recall / mAP@0.5 / mAP@0.5:0.95.
 - Final cell copies `best.pt` and `results.png` into `weights/yolo/`.
@@ -26,7 +26,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - Exports `linear_probe_weights.pt`, `class_names.json`, `config.json` → `weights/clip/linear_probe/`.
 
 **Stage 2b — YOLO + CLIP video pipeline** (`use_finetuned_yolo_and_clip_on_video.ipynb`)
-- Per frame: YOLO `conf=0.4` → for every detection where `class_name.lower() == "car"` and crop ≥ 80×80 px, crop, run CLIP backbone, L2-normalize, push through linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`.
+- Per frame: YOLO `conf=0.4` → for every detection where `class_name.lower() == "car"` and crop ≥ 80×80 px, crop, run CLIP backbone, L2-normalize, push through linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Truck detections are intentionally excluded from brand classification because the linear probe was trained on car-only images; truck crops are out-of-distribution.
 - Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
 
 **Stage 3 — VLM caption + Q&A** (`my_yolo_vlm_step3.ipynb`)

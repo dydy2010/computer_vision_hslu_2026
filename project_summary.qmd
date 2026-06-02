@@ -23,7 +23,7 @@ To achieve this goal, the following sub-objectives were identified:
 
 ## Detect driving-scene objects
 
-A YOLOv10 model is used to detect predefined objects in driving scenes. The model is fine-tuned on an annotated dataset. With the selected dataset, 11 object classes are available:
+A YOLO26 model is used to detect predefined objects in driving scenes. The model is fine-tuned on an annotated dataset. With the selected dataset, 11 object classes are available:
 
 - biker
 - car

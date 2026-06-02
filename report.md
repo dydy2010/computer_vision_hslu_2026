@@ -4,7 +4,7 @@
 > **Final deliverable:** PDF presentation (slides exported from this report + figures + demo video stills/clips). Code/notebooks are operational; DevOps (env pinning, repro scripts, dataset hygiene) is still ongoing.
 
 ## 1. Project Summary
-This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to produce a captioned dashcam demo. The pipeline generates an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
+This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to produce a captioned dashcam demo. The pipeline generates an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
 
 ## 2. Objectives
 - Detect driving-scene objects with YOLO (11 self-driving classes).
@@ -23,7 +23,7 @@ This project combines a fine-tuned **YOLOv10n** detector, an **OpenCLIP ViT-B-32
 ## 4. Implemented Pipeline
 
 ### 4.0 Stage Map
-- **Stage 1 — YOLO fine-tune** (`my_yolo_selfdriving_local.ipynb`): `yolov10n.pt` → fine-tune (`imgsz=512`, `batch=16`, `epochs=30`, `patience=10`) → eval (`model.val()` for P/R/mAP@0.5/mAP@0.5:0.95) → export `weights/yolo/best.pt`.
+- **Stage 1 — YOLO fine-tune** (`my_yolo_selfdriving_local.ipynb`): `yolo26s.pt` → fine-tune (`imgsz=512`, `batch=16`, `epochs=30`, `patience=10`) → eval (`model.val()` for P/R/mAP@0.5/mAP@0.5:0.95) → export `weights/yolo/best.pt`.
 - **Stage 2a — CLIP linear probe** (`clip-car-classification-with-linear-probe.ipynb`): freeze OpenCLIP `ViT-B-32`/`laion2b_s34b_b79k`, cache image embeddings once, train `nn.Linear(512, 20)` (Adam `lr=1e-3`, `wd=1e-4`, early stop `patience=7`, 70/15/15 stratified split) → export to `weights/clip/linear_probe/`.
 - **Stage 2b — YOLO+CLIP video** (`use_finetuned_yolo_and_clip_on_video.ipynb`): per frame YOLO `conf=0.4`; for each detection where `class == "car"` and crop ≥ 80×80, crop → CLIP → L2-normalize → linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
 - **Stage 3 — VLM caption + Q&A** (`my_yolo_vlm_step3.ipynb`): local `qwen3-vl:4b` via Ollama; adaptive captioning (gray-frame `absdiff().mean() ≥ 12.0` AND ≥ `5.0 s` since last caption); banner overlay; Q&A widget seeks by frame index, single-frame reasoning, fallback retry on empty response.
@@ -72,9 +72,42 @@ ret, frame = cap.read()
 - Prompting behavior improved from rigid template to smarter, question-first style.
 - Response speed and stability improved with bounded generation and fallback handling.
 
+### 6.1 YOLOv10n Baseline (before upgrade)
+
+These numbers were copied directly from the `model.val()` cell output in `my_yolo_selfdriving_local.ipynb`.
+
+- **Model**: `yolov10n.pt` (COCO-pretrained, fine-tuned on Self-Driving-Car-3)
+- **Training**: `epochs=30`, `imgsz=512`, `batch=16`, `patience=10`
+
+| Metric | Value |
+|---|---|
+| Precision | 0.801 |
+| Recall | 0.598 |
+| mAP@0.5 | 0.675 |
+| mAP@0.5:0.95 | 0.388 |
+
+Per-class validation metrics (from cell output):
+
+| Class | Images | Instances | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
+|---|---|---|---|---|---|---|
+| all | 2980 | 19514 | 0.801 | 0.598 | 0.675 | 0.388 |
+| biker | 257 | 405 | 0.697 | 0.608 | 0.676 | 0.373 |
+| car | 2579 | 12667 | 0.826 | 0.799 | 0.856 | 0.579 |
+
+*(Remaining per-class rows omitted for brevity — full table is in the notebook output.)*
+
+### 6.2 YOLO26 Comparison (after retraining — to be filled)
+
+| Metric | YOLOv10n (baseline) | YOLO26 (new) | Δ |
+|---|---|---|---|
+| Precision | 0.801 | — | — |
+| Recall | 0.598 | — | — |
+| mAP@0.5 | 0.675 | — | — |
+| mAP@0.5:0.95 | 0.388 | — | — |
+
 ## 7. Known Limits
 - **Stage 2b labeling**: brand confidence is not thresholded — even a ~5 % top-1 brand is drawn on the box.
-- **Stage 2b coverage**: only `class == "car"` triggers CLIP, so trucks (and other vehicle-like detections) are excluded by design.
+- **Stage 2b coverage**: only `class == "car"` triggers CLIP brand classification. Trucks are intentionally excluded because the linear probe was trained on car-only images; truck crops are out-of-distribution and would yield miscalibrated brand confidence.
 - **No tracking**: no per-vehicle ID across frames → brand labels flicker even when YOLO is stable.
 - **Domain mismatch**: linear probe was trained on well-framed brand photos and is applied to small / oblique / motion-blurred dashcam crops → noisy outputs.
 - **CLIP not batched**: one crop at a time per frame.
