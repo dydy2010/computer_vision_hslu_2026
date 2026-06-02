@@ -10,7 +10,7 @@ Polish  : white cards with colored top-borders, play-icon video placeholders,
           left-edge section spine, unified teal arrows, generous whitespace.
 """
 from pptx import Presentation
-from pptx.util import Inches, Pt, Emu
+from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
@@ -248,8 +248,8 @@ set_slide_bg(s)
 section_spine(s, TEAL)
 add_title(s, "Finding objects is step one — we also need to see the whole scene.")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), TEAL)
-gap_w = Inches(5.1); gx = Inches(0.95)
-video_placeholder(s, gx, Inches(1.85), gap_w, Inches(4.3), "Raw dashcam frame")
+gap_w = Inches(5.1)
+video_placeholder(s, MARGIN, Inches(1.85), gap_w, Inches(4.3), "Raw dashcam frame")
 video_placeholder(s, Inches(7.28), Inches(1.85), gap_w, Inches(4.3), "YOLO bounding boxes")
 teal_arrow(s, Inches(6.18), Inches(3.85), Inches(0.95), Inches(0.45))
 add_note(s, "YOLO gives us boxes, but a car has a brand. The scene is not just objects — it is road, sidewalk, sky. We need two detection layers.")
@@ -260,14 +260,14 @@ set_slide_bg(s)
 section_spine(s, TEAL)
 add_title(s, "YOLO26s — fast object detection")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), TEAL)
-add_subtitle(s, "11 classes · 512 px · 30 epochs · mAP@0.5 ≈ _._ (fill after rerun)", Inches(1.55))
+add_subtitle(s, "11 classes · 512 px · 30 epochs · mAP@0.5 = 0.842  ·  mAP@0.5:0.95 = 0.515", Inches(1.55))
 video_placeholder(s, MARGIN, Inches(2.2), Inches(7.8), Inches(4.0),
                   "Stage 1 — YOLO-only output (5-sec clip, no brand chips yet)")
 for i, (label, val) in enumerate([("Classes", "11"), ("Image Size", "512 px"), ("Epochs", "30")]):
     stat_card(s, Inches(9.05), Inches(2.2) + i * Inches(1.35), Inches(3.35), Inches(1.15),
               val, label, TEAL)
-add_caption(s, "Backbone upgraded from YOLOv10n to YOLO26s for better feature capacity; trained on Self-Driving-Car-3.")
-add_note(s, "We upgraded from YOLOv10n to YOLO26s, trading a little speed for greater feature capacity — we'll compare results when training finishes. The dataset covers 11 street classes including nuanced traffic-light states.")
+add_caption(s, "Upgraded from YOLOv10n → YOLO26s:  +24.7% mAP@0.5,  +32.7% mAP@0.5:0.95,  +26.1% recall  (11-class Self-Driving-Car-3, 30 epochs).")
+add_note(s, "YOLOv10n baseline: P=0.801, R=0.598, mAP@0.5=0.675, mAP@0.5:0.95=0.388.  YOLO26s: P=0.874, R=0.754, mAP@0.5=0.842, mAP@0.5:0.95=0.515.  The 9.4 M parameter backbone with C2PSA blocks delivers a significant accuracy lift — especially on recall and strict mAP. Pedestrian remains the hardest class (mAP 0.692) due to scale and occlusion. The dataset covers 11 street classes including nuanced traffic-light states.")
 
 # ── SLIDE 6: Segmentation ─────────────────────────────────────────────────────
 s = prs.slides.add_slide(blank)
@@ -276,12 +276,21 @@ section_spine(s, TEAL)
 add_title(s, "SegFormer-B5 — pixel-level scene understanding")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), TEAL)
 add_subtitle(s, "Cityscapes · 19 classes · 84 % mIoU", Inches(1.55))
+# Real SegFormer outputs: original, mask, blended overlay
+seg_imgs = [
+    ("/home/dongyuan/Desktop/computer_vision/other_document/segformer_original.png", "Original"),
+    ("/home/dongyuan/Desktop/computer_vision/other_document/segformer_mask.png", "Mask"),
+    ("/home/dongyuan/Desktop/computer_vision/other_document/segformer_blended.png", "Overlay (α=0.5)")
+]
 seg_w = Inches(3.7); seg_gap = Inches(0.22)
-for i, label in enumerate(["Original", "Segmentation Mask", "Overlay"]):
+for i, (img_path, label) in enumerate(seg_imgs):
     x = MARGIN + i * (seg_w + seg_gap)
-    video_placeholder(s, x, Inches(2.2), seg_w, Inches(4.0), label)
-add_caption(s, "Nearest-neighbor upsampling preserves boundaries; not real-time by design — a quality demonstration.")
-add_note(s, "Our newest stage answers the same question as YOLO, but at the pixel level: what is in this scene? Road, sidewalk, building, vegetation — scene geometry, not just boxes.")
+    pic = s.shapes.add_picture(img_path, x, Inches(2.2), width=seg_w)
+    thin_border(pic, BORDER, Pt(1))
+    add_textbox(s, x, Inches(6.15), seg_w, Inches(0.5),
+                label, Pt(12), TEAL, bold=True, align=PP_ALIGN.CENTER)
+add_caption(s, "Nearest-neighbor upsampling preserves boundaries; 2,516 frames at ~5 it/s (~8 min) — quality demo, not real-time.")
+add_note(s, "Our newest stage answers the same question as YOLO, but at the pixel level: what is in this scene? Road (purple), vegetation (green), vehicles (red), sky (blue) — scene geometry, not just boxes. SegFormer-B5 is pretrained on Cityscapes (84% mIoU) and generalises directly to our dashcam domain without any fine-tuning.")
 
 # ── SLIDE 7: Divider Enrich ───────────────────────────────────────────────────
 s = divider_slide(prs, blank, "Enrich", 2, AMBER)
@@ -347,15 +356,19 @@ set_slide_bg(s)
 section_spine(s, AMBER)
 add_title(s, "Brands drawn live on the video")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), AMBER)
-add_subtitle(s, "Car-only crops · confidence ≥ 0.3 · trucks excluded by design", Inches(1.55))
-video_placeholder(s, MARGIN, Inches(2.2), Inches(7.8), Inches(4.0),
-                  "Full annotated video (YOLO + CLIP) — 5-sec clip showing brand chip")
+add_subtitle(s, "Car-only crops · 80×80 min · trucks excluded by design", Inches(1.55))
+# Real output frame from Stage 2b (YOLO + CLIP brand overlay)
+img_path = "/home/dongyuan/Desktop/computer_vision/other_document/clip_yolo_result_check.png"
+pic = s.shapes.add_picture(img_path, MARGIN, Inches(2.2), width=Inches(7.8))
+# Add a subtle border around the image
+thin_border(pic, BORDER, Pt(1))
+# Flow pills — the pipeline steps that produced this frame
 flow = ["Frame", "YOLO crop", "CLIP", "softmax", "label"]
 for i, item in enumerate(flow):
     pill(s, Inches(9.05), Inches(2.25) + i * Inches(0.78), Inches(3.35), Inches(0.58),
          item, AMBER)
-add_caption(s, "Trucks are out-of-distribution for the probe; drawing a brand on them would be misleading.")
-add_note(s, "We only run CLIP on car crops above 80×80 px, gating the brand at 0.3 confidence. No hallucinated labels.")
+add_caption(s, "Real output: YOLO26s boxes + CLIP brand chips (BMW, Peugeot …). Trucks excluded by design — car-only probe.")
+add_note(s, "This is a real frame from the Stage 2b pipeline. YOLO26s detects the cars (YOLO conf=0.2); CLIP crops each car, runs it through the frozen ViT-B-32 backbone and the learned 512→20 linear probe, and overlays the top-1 brand with confidence. We only run CLIP on car crops above 80×80 px. Trucks are intentionally skipped — the probe was trained on car-only images and would miscalibrate on truck crops. Brand confidence is currently not thresholded (a known limit).")
 
 # ── SLIDE 11: Divider Explain ─────────────────────────────────────────────────
 s = divider_slide(prs, blank, "Explain", 3, INDIGO)
@@ -368,10 +381,16 @@ set_slide_bg(s)
 section_spine(s, INDIGO)
 add_title(s, "The ultimate interface is plain language.")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), INDIGO)
-video_placeholder(s, Inches(1.6), Inches(2.0), Inches(10.1), Inches(4.0),
-                  "VLM captioned video — caption banner appearing dynamically (5-sec clip)")
+# Real VLM output frame — the "Explain" stage in action
+img_vlm1 = "/home/dongyuan/Desktop/computer_vision/other_document/vlm_caption_red_car_rain.png"
+pic1 = s.shapes.add_picture(img_vlm1, Inches(2.0), Inches(2.0), width=Inches(9.3))
+thin_border(pic1, BORDER, Pt(1))
+# Caption banner label below the image
+add_textbox(s, Inches(2.0), Inches(6.15), Inches(9.3), Inches(0.5),
+            '"A red car is driving down a wet road in the rain, approaching a traffic light."',
+            Pt(14), INDIGO, align=PP_ALIGN.CENTER)
 add_caption(s, "Scene captioning + frame-based Q&A so any viewer — not just an engineer — can follow the story.")
-add_note(s, "Boxes and brands are intermediate outputs. The real product is a sentence: 'A white Toyota is stopping at a red light while pedestrians cross.' That's what a customer demo needs.")
+add_note(s, "This is a real output from Stage 3. YOLO sees 'car, trafficLight' — the VLM narrates 'A red car is driving down a wet road in the rain, approaching a traffic light.' Boxes and brands are intermediate outputs. The real product is a sentence any human can read. That's what a customer demo needs.")
 
 # ── SLIDE 13: VLM Adaptive Captioning ───────────────────────────────────────────
 s = prs.slides.add_slide(blank)
@@ -380,12 +399,28 @@ section_spine(s, INDIGO)
 add_title(s, "Adaptive captioning — only when the scene changes")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), INDIGO)
 add_subtitle(s, "Qwen3-VL:4b via Ollama · adaptive gating · diff ≥ 12 · min interval 5 s", Inches(1.55))
-vw = Inches(5.6); vgap = Inches(0.33)
-for i, label in enumerate(["Static caption", "Adaptive caption (scene change)"]):
-    x = MARGIN + i * (vw + vgap)
-    video_placeholder(s, x, Inches(2.2), vw, Inches(4.0), label)
+# Two real VLM outputs side-by-side — demonstrating adaptive gating (different scenes → different captions)
+img_vlm_a = "/home/dongyuan/Desktop/computer_vision/other_document/vlm_caption_red_car_rain.png"
+img_vlm_b = "/home/dongyuan/Desktop/computer_vision/other_document/vlm_caption_truck_pedestrian.png"
+
+# Left frame
+x1 = MARGIN
+pic_a = s.shapes.add_picture(img_vlm_a, x1, Inches(2.2), width=Inches(5.6))
+thin_border(pic_a, BORDER, Pt(1))
+add_textbox(s, x1, Inches(6.15), Inches(5.6), Inches(0.5),
+            '"A red car is driving down a wet road in the rain, approaching a traffic light."',
+            Pt(12), INDIGO, align=PP_ALIGN.CENTER)
+
+# Right frame
+x2 = MARGIN + Inches(5.6) + Inches(0.33)
+pic_b = s.shapes.add_picture(img_vlm_b, x2, Inches(2.2), width=Inches(5.6))
+thin_border(pic_b, BORDER, Pt(1))
+add_textbox(s, x2, Inches(6.15), Inches(5.6), Inches(0.5),
+            '"A white truck and a pedestrian are crossing the road at a pedestrian crossing..."',
+            Pt(12), INDIGO, align=PP_ALIGN.CENTER)
+
 add_caption(s, "Captions fire only when the scene actually changes — no redundant narration.")
-add_note(s, "Qwen3-VL runs locally via Ollama. Captions fire only when the scene actually changes — no redundant narration.")
+add_note(s, "Two real frames from Stage 3, showing adaptive captioning in action. The left frame triggers a 'rainy driving' caption; the right frame triggers a 'pedestrian crossing' caption — because the scene changed enough (diff ≥ 12) and the minimum 5-second interval elapsed. The VLM produces fluent sentences with colour, weather, action, and spatial relationships — not just keyword lists. This is the difference between a detector output and a human-readable story.")
 
 # ── SLIDE 14: Q&A Interface ────────────────────────────────────────────────────
 s = prs.slides.add_slide(blank)
@@ -454,8 +489,8 @@ s = prs.slides.add_slide(blank)
 set_slide_bg(s)
 add_title(s, "Results & Key Metrics")
 accent_rule(s, MARGIN, Inches(1.35), Inches(1.4), TEAL)
-metrics = [("Detection", "mAP@0.5 ≈ _._\nmAP@0.5:0.95 ≈ _._", TEAL),
-           ("Enrichment", "Probe accuracy ≈ _._ %\n20 brands", AMBER),
+metrics = [("Detection", "P = 0.874\nR = 0.754\nmAP@0.5 = 0.842\nmAP@0.5:0.95 = 0.515", TEAL),
+           ("Enrichment", "Probe accuracy ≈ 80 %\n20 brands\n(79.8 % on test split)", AMBER),
            ("Segmentation", "19 Cityscapes classes\n84 % mIoU (pretrained)", TEAL),
            ("Narration", "Adaptive captioning\nlocal inference", INDIGO)]
 m_w = Inches(2.7); m_gap = Inches(0.32)
@@ -471,9 +506,8 @@ for i, (title, body, color) in enumerate(metrics):
                 bold=True, align=PP_ALIGN.CENTER)
     add_textbox(s, x + Inches(0.15), Inches(3.05), m_w - Inches(0.3), Inches(1.2),
                 body, Pt(13), SLATE, align=PP_ALIGN.CENTER)
-add_caption(s, "Note: 0.68 was the old YOLOv10n baseline; insert new YOLO26s values.", top=Inches(5.0))
-add_caption(s, "Leave blank spaces for the actual results.png and confusion-matrix screenshots.", top=Inches(5.45))
-add_note(s, "These numbers validate each stage. Detection is production-grade. Brand recognition jumps from 55% zero-shot to 80% with the probe — a 25-point gain from a single linear layer on frozen embeddings. Segmentation leverages a pretrained SOTA model for immediate quality.")
+add_caption(s, "YOLOv10n baseline → YOLO26s:  +24.7% mAP@0.5,  +32.7% mAP@0.5:0.95,  +26.1% recall.  Hardest class: pedestrian (mAP 0.692).", top=Inches(5.5))
+add_note(s, "Detection: YOLOv10n (P=0.801, R=0.598, mAP@0.5=0.675, mAP@0.5:0.95=0.388) upgraded to YOLO26s (P=0.874, R=0.754, mAP@0.5=0.842, mAP@0.5:0.95=0.515) — a substantial accuracy lift across all metrics. The C2PSA backbone (9.4 M params) generalises well on 11 dashcam classes; pedestrian remains hardest due to scale and occlusion.  Enrichment: Brand recognition jumps from 55% zero-shot to 80% with the probe — a 25-point gain from a single linear layer on frozen embeddings. Segmentation leverages a pretrained SOTA model for immediate quality.")
 
 # ── SLIDE 17: Future Work & Takeaway ────────────────────────────────────────────
 s = prs.slides.add_slide(blank)
