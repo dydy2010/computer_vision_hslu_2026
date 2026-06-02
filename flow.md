@@ -34,6 +34,12 @@ What happens if the output already exists: Stage 3 cell 5 has SKIP_IF_OUTPUT_EXI
 
 What happens if predict/ exists alongside clip_predict/: ignored. clip_predict/ always wins.
 
+Stage 4 — 04_semantic_segmentation.ipynb
+Path
+Input video	original_videos/dashcam.mp4 ← reads raw video directly, independent of Stages 1–3
+Output		runs_output/segmentation/cityscapes_segmented.mp4
+Note: This stage is completely independent. It does not consume outputs from detect/ or clip_predict/. Set PROCESS_SECS for quick validation before a full render.
+
 End-to-end picture for your re-run
 original_videos/dashcam.mp4
         │

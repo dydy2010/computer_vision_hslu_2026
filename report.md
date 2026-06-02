@@ -27,6 +27,7 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 - **Stage 2a — CLIP linear probe** (`02a_clip_probe_train.ipynb`): freeze OpenCLIP `ViT-B-32`/`laion2b_s34b_b79k`, cache image embeddings once, train `nn.Linear(512, 20)` (Adam `lr=1e-3`, `wd=1e-4`, early stop `patience=7`, 70/15/15 stratified split) → export to `weights/clip/linear_probe/`.
 - **Stage 2b — YOLO+CLIP video** (`02b_yolo_clip_video.ipynb`): per frame YOLO `conf=0.4`; for each detection where `class == "car"` and crop ≥ 80×80, crop → CLIP → L2-normalize → linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
 - **Stage 3 — VLM caption + Q&A** (`03_vlm_caption.ipynb`): local `qwen3-vl:4b` via Ollama; adaptive captioning (gray-frame `absdiff().mean() ≥ 12.0` AND ≥ `5.0 s` since last caption); banner overlay; Q&A widget seeks by frame index, single-frame reasoning, fallback retry on empty response.
+- **Stage 4 — Semantic Segmentation** (`04_semantic_segmentation.ipynb`): pretrained `nvidia/segformer-b5-finetuned-cityscapes-1024-1024` via Hugging Face Transformers. Per-frame inference → nearest-neighbor upsampling → Cityscapes 19-class palette → alpha-blended overlay on original video. Output: `runs_output/segmentation/cityscapes_segmented.mp4`. Independent of Stages 1–3; reads `original_videos/dashcam.mp4` directly.
 
 ### 4.1 Detection and Input Resolution
 - YOLO outputs are read from `runs_output/detect`.
@@ -65,6 +66,7 @@ ret, frame = cap.read()
 - Stage 2 video: `runs_output/detect/clip_predict/annotated_video.mp4`
 - Stage 3 captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
   (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
+- Stage 4 segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4` (pretrained SegFormer-B5 on Cityscapes, independent of Stages 1–3).
 - Stage 1 (optional) compressed YOLO video: `runs_output/detect/predict*/converted_mp4/*_compressed.mp4` (produced by the Stage 1 `ffmpeg` cell, not by Stage 3).
 
 ## 6. Current Results
@@ -128,6 +130,6 @@ Per-class validation metrics (from cell output):
 - Extend CLIP-trigger to `truck` and other vehicle classes; consider a "vehicle vs not" gate.
 - Auto-scale banner font from `frame.shape` so the overlay looks consistent across resolutions.
 - Add a YOLO-vs-VLM object-consistency check (do detected classes appear in the VLM caption?) as a sanity metric.
-- Stage 4 — Semantic Segmentation: pretrained SegFormer-B5 on Cityscapes, pixel-level mask overlay (`runs_output/segmentation/cityscapes_segmented.mp4`). Side-by-side YOLO boxes vs. segmentation mask for the final PDF presentation.
 - Final evaluation tables + figures for the PDF presentation: training curves, confusion matrix, per-class F1, qualitative frames.
+- Side-by-side YOLO boxes vs. segmentation mask figure for the final PDF presentation.
 
