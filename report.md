@@ -23,10 +23,10 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 ## 4. Implemented Pipeline
 
 ### 4.0 Stage Map
-- **Stage 1 — YOLO fine-tune** (`my_yolo_selfdriving_local.ipynb`): `yolo26s.pt` → fine-tune (`imgsz=512`, `batch=16`, `epochs=30`, `patience=10`) → eval (`model.val()` for P/R/mAP@0.5/mAP@0.5:0.95) → export `weights/yolo/best.pt`.
-- **Stage 2a — CLIP linear probe** (`clip-car-classification-with-linear-probe.ipynb`): freeze OpenCLIP `ViT-B-32`/`laion2b_s34b_b79k`, cache image embeddings once, train `nn.Linear(512, 20)` (Adam `lr=1e-3`, `wd=1e-4`, early stop `patience=7`, 70/15/15 stratified split) → export to `weights/clip/linear_probe/`.
-- **Stage 2b — YOLO+CLIP video** (`use_finetuned_yolo_and_clip_on_video.ipynb`): per frame YOLO `conf=0.4`; for each detection where `class == "car"` and crop ≥ 80×80, crop → CLIP → L2-normalize → linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
-- **Stage 3 — VLM caption + Q&A** (`my_yolo_vlm_step3.ipynb`): local `qwen3-vl:4b` via Ollama; adaptive captioning (gray-frame `absdiff().mean() ≥ 12.0` AND ≥ `5.0 s` since last caption); banner overlay; Q&A widget seeks by frame index, single-frame reasoning, fallback retry on empty response.
+- **Stage 1 — YOLO fine-tune** (`01_yolo_finetune.ipynb`): `yolo26s.pt` → fine-tune (`imgsz=512`, `batch=16`, `epochs=30`, `patience=10`) → eval (`model.val()` for P/R/mAP@0.5/mAP@0.5:0.95) → export `weights/yolo/best.pt`.
+- **Stage 2a — CLIP linear probe** (`02a_clip_probe_train.ipynb`): freeze OpenCLIP `ViT-B-32`/`laion2b_s34b_b79k`, cache image embeddings once, train `nn.Linear(512, 20)` (Adam `lr=1e-3`, `wd=1e-4`, early stop `patience=7`, 70/15/15 stratified split) → export to `weights/clip/linear_probe/`.
+- **Stage 2b — YOLO+CLIP video** (`02b_yolo_clip_video.ipynb`): per frame YOLO `conf=0.4`; for each detection where `class == "car"` and crop ≥ 80×80, crop → CLIP → L2-normalize → linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
+- **Stage 3 — VLM caption + Q&A** (`03_vlm_caption.ipynb`): local `qwen3-vl:4b` via Ollama; adaptive captioning (gray-frame `absdiff().mean() ≥ 12.0` AND ≥ `5.0 s` since last caption); banner overlay; Q&A widget seeks by frame index, single-frame reasoning, fallback retry on empty response.
 
 ### 4.1 Detection and Input Resolution
 - YOLO outputs are read from `runs_output/detect`.
@@ -74,7 +74,7 @@ ret, frame = cap.read()
 
 ### 6.1 YOLOv10n Baseline (before upgrade)
 
-These numbers were copied directly from the `model.val()` cell output in `my_yolo_selfdriving_local.ipynb`.
+These numbers were copied directly from the `model.val()` cell output in `01_yolo_finetune.ipynb`.
 
 - **Model**: `yolov10n.pt` (COCO-pretrained, fine-tuned on Self-Driving-Car-3)
 - **Training**: `epochs=30`, `imgsz=512`, `batch=16`, `patience=10`

@@ -4,7 +4,7 @@ Key thing to understand first: Stage 2b does NOT use predict as input. It reads 
 So keeping predict/ is safe — it will be ignored on the default route.
 
 Full flow, stage by stage
-Stage 1 — my_yolo_selfdriving_local.ipynb
+Stage 1 — 01_yolo_finetune.ipynb
 Path
 Input (train/eval)	data.yaml (dataset)
 Input (predict cell)	dashcam.mp4
@@ -16,7 +16,7 @@ Important about the predict cell: Ultralytics names new folders predict, predict
 
 For your re-run you don't need to run the Stage 1 predict cell at all. Stage 2b will read the original video directly.
 
-Stage 2b — use_finetuned_yolo_and_clip_on_video.ipynb
+Stage 2b — 02b_yolo_clip_video.ipynb
 Path
 Input video	dashcam.mp4 ← always reads this, ignores everything under detect
 Input weights	best.pt, weights/clip/linear_probe/*
@@ -25,7 +25,7 @@ What happens if the file already exists: Stage 2b overwrites clip_predict/annota
 
 What happens if predict/ and predict_archive1/ exist: nothing. Stage 2b never looks at them.
 
-Stage 3 — my_yolo_vlm_step3.ipynb
+Stage 3 — 03_vlm_caption.ipynb
 Path
 Input video (auto-discovered)	the first existing of: annotated_video.mp4 → highest-numbered runs_output/detect/predict<N>/<video> → runs_output/detect/predict/<video> → any other sibling dir under detect that contains a video
 Output captioned video	<discovered_dir>/vlm_overlay/<basename>_vlm.mp4

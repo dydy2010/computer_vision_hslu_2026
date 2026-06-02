@@ -13,23 +13,23 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 
 ## Pipeline Architecture (verified)
 
-**Stage 1 — YOLO fine-tuning** (`my_yolo_selfdriving_local.ipynb`)
+**Stage 1 — YOLO fine-tuning** (`01_yolo_finetune.ipynb`)
 - Backbone `yolo26s.pt` (COCO-pretrained), fine-tuned on `Self-Driving-Car-3` (11 classes: `biker, car, pedestrian, trafficLight, trafficLight-Green/-GreenLeft/-Red/-RedLeft/-Yellow/-YellowLeft, truck`).
 - Training: `imgsz=512`, `batch=16`, `epochs=30`, `patience=10`, output to `runs_output/detect/selfdriving_v1/`.
 - Eval cell runs `model.val()` for precision / recall / mAP@0.5 / mAP@0.5:0.95.
 - Final cell copies `best.pt` and `results.png` into `weights/yolo/`.
 
-**Stage 2a — CLIP linear probe training** (`clip-car-classification-with-linear-probe.ipynb`, originally trained on Kaggle)
+**Stage 2a — CLIP linear probe training** (`02a_clip_probe_train.ipynb`, originally trained on Kaggle)
 - Backbone OpenCLIP `ViT-B-32` / `laion2b_s34b_b79k`, **frozen**; embeddings cached once.
 - Probe = `nn.Linear(512, 20)`, Adam (`lr=1e-3`, `wd=1e-4`), cross-entropy, early stop `patience=7`, max `epochs=50`, 70/15/15 stratified split.
 - 20 brands (European-biased): `Audi, BMW, Chevrolet, Citroen, Dacia, Fiat, Ford, Honda, Hyundai, Kia, Mercedes, Nissan, Opel, Peugeot, Renault, Seat, Skoda, Tofaş, Toyota, Volkswagen`.
 - Exports `linear_probe_weights.pt`, `class_names.json`, `config.json` → `weights/clip/linear_probe/`.
 
-**Stage 2b — YOLO + CLIP video pipeline** (`use_finetuned_yolo_and_clip_on_video.ipynb`)
+**Stage 2b — YOLO + CLIP video pipeline** (`02b_yolo_clip_video.ipynb`)
 - Per frame: YOLO `conf=0.4` → for every detection where `class_name.lower() == "car"` and crop ≥ 80×80 px, crop, run CLIP backbone, L2-normalize, push through linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Truck detections are intentionally excluded from brand classification because the linear probe was trained on car-only images; truck crops are out-of-distribution.
 - Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
 
-**Stage 3 — VLM caption + Q&A** (`my_yolo_vlm_step3.ipynb`)
+**Stage 3 — VLM caption + Q&A** (`03_vlm_caption.ipynb`)
 - Local `qwen3-vl:4b` via the `ollama` Python client.
 - Auto-discovery priority: `clip_predict` → highest `predictN` (Ultralytics default; `predict-N` / `predict_N` also accepted) → `predict` → other child dirs of `runs_output/detect/` containing a video. Overridable via `INPUT_VIDEO`, `PREDICT_DIR`, `INPUT_ROOT`.
 - Adaptive captioning gate: gray-frame `absdiff().mean() ≥ CAPTION_DIFF_THRESHOLD (12.0)` **and** elapsed ≥ `CAPTION_MIN_SEC (5.0)`. Switch to fixed-interval mode with `CAPTION_MODE=fixed` and `CAPTION_EVERY_SEC`.
@@ -47,17 +47,17 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - **Dataset hygiene**: `Self-Driving-Car-3/` (~59k files) lives inside the repo — confirm `.gitignore` excludes it before any push.
 
 ## Notebook Roles
-- `my_yolo_selfdriving_local.ipynb`: trains or re-runs the YOLO self-driving detector and exports canonical YOLO weights to `weights/yolo/`.
-- `clip-car-classification-with-linear-probe.ipynb`: trains/evaluates the CLIP linear probe and exports probe artifacts (`linear_probe_weights.pt`, `class_names.json`, `config.json`). This is an asset-building notebook, not the normal runtime demo notebook.
-- `use_finetuned_yolo_and_clip_on_video.ipynb`: final Step 2 runtime notebook. It loads the already-trained YOLO and CLIP assets, runs one input video, and writes a CLIP-enriched output video to `runs_output/detect/clip_predict/`.
-- `my_yolo_vlm_step3.ipynb`: final Step 3 runtime notebook. It adds VLM captions and Q&A on top of the Step 2 or Step 1 output video.
+- `01_yolo_finetune.ipynb`: trains or re-runs the YOLO self-driving detector and exports canonical YOLO weights to `weights/yolo/`.
+- `02a_clip_probe_train.ipynb`: trains/evaluates the CLIP linear probe and exports probe artifacts (`linear_probe_weights.pt`, `class_names.json`, `config.json`). This is an asset-building notebook, not the normal runtime demo notebook.
+- `02b_yolo_clip_video.ipynb`: final Step 2 runtime notebook. It loads the already-trained YOLO and CLIP assets, runs one input video, and writes a CLIP-enriched output video to `runs_output/detect/clip_predict/`.
+- `03_vlm_caption.ipynb`: final Step 3 runtime notebook. It adds VLM captions and Q&A on top of the Step 2 or Step 1 output video.
 
 ## Final Demo Workflow
-1. If YOLO weights already exist in `weights/yolo/`, skip `my_yolo_selfdriving_local.ipynb`.
-2. If CLIP probe artifacts already exist in `weights/clip/linear_probe/`, skip `clip-car-classification-with-linear-probe.ipynb`.
-3. Run `use_finetuned_yolo_and_clip_on_video.ipynb` on `original_videos/dashcam.mp4` to produce `runs_output/detect/clip_predict/annotated_video.mp4`.
+1. If YOLO weights already exist in `weights/yolo/`, skip `01_yolo_finetune.ipynb`.
+2. If CLIP probe artifacts already exist in `weights/clip/linear_probe/`, skip `02a_clip_probe_train.ipynb`.
+3. Run `02b_yolo_clip_video.ipynb` on `original_videos/dashcam.mp4` to produce `runs_output/detect/clip_predict/annotated_video.mp4`.
 4. Start Ollama and ensure `qwen3-vl:4b` is available.
-5. Run `my_yolo_vlm_step3.ipynb`:
+5. Run `03_vlm_caption.ipynb`:
 	- setup/import cells,
 	- caption generation cell,
 	- Q&A cell.
