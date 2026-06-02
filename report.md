@@ -57,6 +57,10 @@ cap.set(cv2.CAP_PROP_POS_FRAMES, target_idx)
 ret, frame = cap.read()
 ```
 
+![VLM Q&A interface — user asking a question about the current frame](other_document/vlm_qna_interface.png)
+
+*Figure: The Stage 3 Q&A widget in action. A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.*
+
 ### 4.4 Robustness Improvements
 - Deterministic video selection priority:
 	`output_video` -> `input_video` -> resolved predict video.
@@ -90,13 +94,17 @@ Artifacts are produced in pipeline order:
 
 *Caption: "A white truck and a pedestrian are crossing the road at a pedestrian crossing, with a red traffic light visible in the background."*
 
+![VLM caption — highway scene with buildings and traffic structures](other_document/vlm_caption_highway.png)
+
+*Caption: VLM-generated description of a multi-lane urban road scene (exact text visible in the frame banner).*
+
 **Insights from the VLM outputs:**
 
-- **Fluent natural language**, not keyword lists. The VLM produces grammatically correct sentences with subject-verb-object structure.
-- **Rich attribute extraction**: colour (red car, white truck), weather (rain), traffic state (red light), action (driving, crossing), and spatial relationships ("in the background").
-- **Scene-awareness**: the two captions describe entirely different situations — rainy driving vs. pedestrian crossing — demonstrating that adaptive gating successfully triggers new captions only when the scene actually changes.
-- **Audience-ready**: a non-engineer can read either caption and immediately understand what the car sees. This validates the "Explain" stage goal — turning bounding boxes into a story.
-- **Complementary to detection**: YOLO sees "car, truck, pedestrian, trafficLight-Red"; the VLM narrates "A red car is driving down a wet road..." — the same scene, two representations, one for machines and one for humans.
+- **Fluent natural language:** the VLM produces grammatically correct sentences with subject-verb-object structure, not keyword lists.
+- **Rich attribute extraction:** colour (red car, white truck), weather (rain), traffic state (red light), action (driving, crossing), and spatial relationships ("in the background").
+- **Scene-awareness:** the three captions above describe entirely different situations — rainy driving, pedestrian crossing, and urban highway — demonstrating that adaptive gating successfully triggers new captions only when the scene actually changes.
+- **Audience-ready:** a non-engineer can read any caption and immediately understand what the car sees. This validates the "Explain" stage goal — turning bounding boxes into a story.
+- **Complementary to detection:** YOLO sees "car, truck, pedestrian, trafficLight-Red"; the VLM narrates "A red car is driving down a wet road..." — the same scene, two representations, one for machines and one for humans.
 
 ### Stage 4 Output Example (Semantic Segmentation)
 
@@ -175,7 +183,7 @@ These numbers come from the `model.val()` cell output on the trained `best.pt` (
 | pedestrian | 0.692 | Lowest class — small / occluded / distant pedestrians remain challenging |
 | biker | 0.789 | Moderate — bicycle scale and pose variation |
 
-**Takeaway:** Upgrading from YOLOv10n to YOLO26s delivered a substantial accuracy lift across all metrics, with the biggest relative gains in recall (+26.1%) and strict mAP (+32.7%). The model successfully leverages COCO pretraining and the larger 9.4 M parameter backbone to generalise on the 11-class Self-Driving-Car-3 dataset. Pedestrian detection remains the hardest class due to scale and occlusion. The training artifacts (`results.png`, confusion matrix, per-class curves) are available in `runs_output/detect/selfdriving_v1-3/`.
+**Takeaway:** Upgrading from YOLOv10n to YOLO26s delivered a substantial accuracy lift across all metrics, with the biggest relative gains in recall (+26.1%) and strict mAP (+32.7%). The model successfully leverages COCO pretraining and the larger 9.4 M parameter backbone to generalise on the 11-class Self-Driving-Car-3 dataset. Pedestrian detection remains the hardest class due to scale and occlusion. Training artifacts (`results.png`, per-class curves, best weights) are in `runs_output/detect/selfdriving_v1-3/`; validation visualisations (confusion matrix, PR curves, prediction grids) are in `runs/detect/val/`.
 
 ### Validation Visual Evidence
 
