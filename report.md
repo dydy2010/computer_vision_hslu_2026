@@ -4,7 +4,7 @@
 > **Final deliverable:** PowerPoint presentation (`Computer_Vision_Presentation.pptx`, generated via `generate_presentation.py`) + this report + figures + demo video stills/clips. Code and notebooks are operational; DevOps (env pinning, repro scripts, dataset hygiene) is ongoing.
 
 ## 1. Project Summary
-This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to produce a captioned dashcam demo. The pipeline generates an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
+This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to turn raw dashcam video into an annotated, narrated, and queryable street-understanding demo. The core insight is that accurate detection alone does not build human trust — the same scene needs two representations: bounding boxes for machines, and plain language for people. The pipeline demonstrates this end-to-end, producing an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
 
 ## 2. Objectives
 - Detect driving-scene objects with YOLO (11 self-driving classes).
@@ -82,7 +82,11 @@ Artifacts are produced in pipeline order:
 
 ![Stage 2b — YOLO + CLIP brand overlay on dashcam frame](other_document/clip_yolo_result_check.png)
 
-*Figure: A representative frame from the Stage 2b pipeline. YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).*
+*Figure: A representative single-frame validation check from the Stage 2b pipeline. YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).*
+
+![Stage 2b — CLIP brand overlay on running video output](other_document/clip%20linear%20probe%20video.png)
+
+*Figure: A frame extracted from the actual Stage 2b annotated video output. The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.*
 
 ### Stage 3 Output Examples (VLM Adaptive Captioning)
 
@@ -120,6 +124,8 @@ Artifacts are produced in pipeline order:
 - **Fine-grained scene geometry:** The mask distinguishes road, sidewalk, vegetation, traffic structures, and vehicles at pixel level — information YOLO bounding boxes cannot capture.
 - **Boundary preservation:** Nearest-neighbour upsampling from 1024×1024 to the original resolution keeps sharp class edges without smoothing artifacts.
 - **Complementary to detection:** Where YOLO answers "where is the car?" with a box, SegFormer answers "what is the road surface?" with a mask. Together they give both object-level and scene-level understanding.
+- **Small-object limits:** Pedestrians, traffic lights, and signs are often only a few dozen pixels in a 960×540 frame. SegFormer may mislabel or "smear" distant/occluded pedestrians — safety-critical detection still belongs to YOLO.
+- **Temporal jitter:** Per-frame inference without temporal smoothing (optical flow or multi-frame fusion) causes label flicker on moving vehicles and pedestrians. A car may flicker between `car` and `truck` across frames.
 
 ## 6. Current Results
 - **Detection:** YOLO26s fine-tuned on Self-Driving-Car-3 achieves P=0.874, R=0.754, mAP@0.5=0.842, mAP@0.5:0.95=0.515 — a substantial lift over the YOLOv10n baseline (mAP@0.5 +24.7%, strict mAP +32.7%).
@@ -130,7 +136,7 @@ Artifacts are produced in pipeline order:
 
 ### 6.1 YOLOv10n Baseline (before upgrade)
 
-These numbers were copied directly from the `model.val()` cell output in `01_yolo_finetune.ipynb`.
+These numbers come from the `selfdriving_v1-2` training run (`yolov10n.pt`, 30 epochs, `imgsz=512`, `batch=16`).
 
 - **Model**: `yolov10n.pt` (COCO-pretrained, fine-tuned on Self-Driving-Car-3)
 - **Training**: `epochs=30`, `imgsz=512`, `batch=16`, `patience=10`
@@ -183,13 +189,15 @@ These numbers come from the `model.val()` cell output on the trained `best.pt` (
 | pedestrian | 0.692 | Lowest class — small / occluded / distant pedestrians remain challenging |
 | biker | 0.789 | Moderate — bicycle scale and pose variation |
 
-**Takeaway:** Upgrading from YOLOv10n to YOLO26s delivered a substantial accuracy lift across all metrics, with the biggest relative gains in recall (+26.1%) and strict mAP (+32.7%). The model successfully leverages COCO pretraining and the larger 9.4 M parameter backbone to generalise on the 11-class Self-Driving-Car-3 dataset. Pedestrian detection remains the hardest class due to scale and occlusion. Training artifacts (`results.png`, per-class curves, best weights) are in `runs_output/detect/selfdriving_v1-3/`; validation visualisations (confusion matrix, PR curves, prediction grids) are in `runs/detect/val/`.
+**Takeaway:** Upgrading from YOLOv10n to YOLO26s delivered a substantial accuracy lift across all metrics, with the biggest relative gains in recall (+26.1%) and strict mAP (+32.7%). The model successfully leverages COCO pretraining and the larger ~10.0 M parameter backbone to generalise on the 11-class Self-Driving-Car-3 dataset. Pedestrian detection remains the hardest class due to scale and occlusion.
+
+Beyond the numbers, this project demonstrates three practical CV principles in a single pipeline: (1) a frozen general-purpose backbone (CLIP) with a lightweight learned head is sufficient for strong domain adaptation; (2) a pretrained segmentation model generalises without fine-tuning when the target domain shares visual structure with the training domain; and (3) a local VLM can bridge the machine-human understanding gap when paired with intelligent temporal gating. Training artifacts (`results.png`, per-class curves, best weights, confusion matrix, PR curves) are in `runs_output/detect/selfdriving_v1-3/`; prediction grids are in `runs/detect/val/`.
 
 ### Validation Visual Evidence
 
 ![YOLO26s confusion matrix on validation set](other_document/yolo_confusion_matrix.png)
 
-*Figure: Normalised confusion matrix on the validation split (2,980 images, 19,514 instances). Strong diagonal dominance confirms correct classification for most classes. Off-diagonal mass is concentrated in two expected patterns: (1) `car` ↔ `truck` confusion — visually similar at distance or when occluded; (2) traffic-light variant cross-labeling — arrow signals (RedLeft, GreenLeft) occasionally confused with their parent class. Pedestrian and biker show minimal false negatives into background, indicating the model does not simply miss small objects.*
+*Figure: Normalised confusion matrix on the validation split (2,980 images, 19,514 instances). Strong diagonal dominance confirms correct classification for most classes. Off-diagonal mass is concentrated in two expected patterns: (1) `car` ↔ `truck` confusion — visually similar at distance or when occluded; (2) traffic-light variant cross-labeling — arrow signals (RedLeft, GreenLeft) occasionally confused with their parent class. Pedestrian and biker show minimal false negatives to background, indicating the model does not simply miss small objects.*
 
 ![YOLO26s precision-recall curve on validation set](other_document/yolo_pr_curve.png)
 
@@ -205,6 +213,8 @@ These numbers come from the `model.val()` cell output on the trained `best.pt` (
 - **Brand list**: 20 European-leaning brands only (no Tesla, Subaru, Mazda, Lexus, …).
 - **Single-frame Q&A**: misses temporal context (motion, intent, signal transitions).
 - **Exact model identification** from dashcam distance/resolution is often not visually verifiable.
+- **Fixed segmentation ontology:** Cityscapes has no class for potholes, construction zones, or speed bumps. Anything outside the 19 classes is forced into the closest label or dropped as void.
+- **No instance separation:** All vehicles share the same `car` (13) or `truck` (14) color. Segmentation cannot count distinct vehicles — only YOLO's bounding boxes provide object identity.
 
 ## 8. DevOps Backlog (in progress)
 - Add a pinned `requirements.txt` (Ultralytics, open_clip_torch, ollama, scikit-learn, opencv-python, ipywidgets, Pillow, tqdm).

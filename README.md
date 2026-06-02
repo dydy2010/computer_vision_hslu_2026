@@ -2,7 +2,7 @@
 
 Local dashcam pipeline that combines YOLO detection with CLIP brand recognition and VLM scene understanding.
 
-> **Project status:** code/notebooks operational, DevOps (env pinning, repro scripts, dataset hygiene) still ongoing. Final deliverable is a **PDF presentation** built from `report.md` plus exported videos and metric figures.
+> **Project status:** code/notebooks operational, DevOps (env pinning, repro scripts, dataset hygiene) still ongoing. Final deliverable is a **PowerPoint presentation** (`Computer_Vision_Presentation.pptx`, generated via `generate_presentation.py`) plus this report, figures, and demo video stills/clips.
 
 ## What This Project Does
 - Runs YOLO on driving video and saves outputs under `runs_output/detect/predict*`.
@@ -16,7 +16,7 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 
 **Stage 1 — YOLO fine-tuning** (`01_yolo_finetune.ipynb`)
 - Backbone `yolo26s.pt` (COCO-pretrained), fine-tuned on `Self-Driving-Car-3` (11 classes: `biker, car, pedestrian, trafficLight, trafficLight-Green/-GreenLeft/-Red/-RedLeft/-Yellow/-YellowLeft, truck`).
-- Training: `imgsz=512`, `batch=16`, `epochs=30`, `patience=10`, output to `runs_output/detect/selfdriving_v1/`.
+- Training: `imgsz=512`, `batch=16`, `epochs=30`, `patience=10`, output to `runs_output/detect/selfdriving_v1-3/`.
 - Eval cell runs `model.val()` for precision / recall / mAP@0.5 / mAP@0.5:0.95.
 - Final cell copies `best.pt` and `results.png` into `weights/yolo/`.
 
