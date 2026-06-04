@@ -12,6 +12,9 @@ Local dashcam pipeline that combines YOLO detection with CLIP brand recognition 
 - Supports quick frame-based Q&A for audience/demo usage.
 - Exports the captioned video for reporting. (Stage 1 also has an optional `ffmpeg` compression cell that targets ~100 MB under `runs_output/detect/predict*/converted_mp4/`; Stage 3 currently does not compress its own output.)
 
+## Installation
+To install all required packages in the local environement, please run `pip install -r requirements.txt`.
+
 ## Pipeline Architecture (verified)
 
 **Stage 1 — YOLO fine-tuning** (`01_yolo_finetune.ipynb`)
