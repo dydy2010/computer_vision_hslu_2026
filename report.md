@@ -220,36 +220,31 @@ flowchart LR
     --> F["<b>Q&A Widget</b><br/>Seek by Frame Index <br/> Single-Frame Reasoning"]
     --> H["<b>Retry Fallback</b><br/>if Response Empty"]
 ```
+- A Vision Language Model (VLM) qwen3-vl:4b, powered by Ollama is used.
+- A generic prompt, explaining to the model how to describe the image it receives is created.
 
-### 4.2.2 Stage 4 — Semantic Segmentation
->**Corresponding notebook**: 04_semantic_segmentation.ipynb
-```mermaid
-flowchart LR
-    A["<b>Input Video</b><br/>original_videos/dashcam.mp4<br/>Independent of stages 1–3"]
-    --> B["<b>SegFormer-B5</b><br/>nvidia/segformer-b5-<br/>finetuned-cityscapes-1024-1024<br/>via Hugging Face Transformers"]
-    --> C["<b>Per-Frame Inference</b><br/>Upsampling via Nearest Neighbor <br/>Cityscapes Palette with 19 classes"]
-    --> F["<b>Alpha-Blended Overlay</b><br/>on Original Video"]
-    --> G["<b>Output</b><br/>runs_output/segmentation/<br/>cityscapes_segmented.mp4"]
-```
+#### 4.3.1 VLM Caption Overlay
+- The video (with labels and bounding boxes from previous steps) is processed frame by frame:
+    1. The difference between the current frame and the previous one is computed: the frame is converted into black and white, and pixel-wise difference is computed. It is averaged.
+    2. If the average difference is greater than a specified threshold, the frame is considered as different enough from the previous one to generate a new caption.
+    3. A new caption is also generated if the time interval between the current frame and the previous caption is longer than a specified duration (maximum duration between 2 captions, even with little change on the frames).
+    4. To generate a caption, the frame along with the prompt are given to the VLM.
+    5. If the answer is empty, the same request will be sent again to the VLM.
+    5. The caption is rendered on a high-contrast top banner for readability.
+    6. Individual frames are re-assembled into a video.
 
-### 4.1 Detection and Input Resolution
-- YOLO outputs are read from `runs_output/detect`.
-- Discovery order in Step 3 (`candidate_output_dirs`): `clip_predict` → highest numbered `predict*` (Ultralytics writes `predict`, `predict2`, `predict3`, …) → bare `predict` → any other sibling dir that contains a video.
-- The numbered-folder regex accepts both Ultralytics-default (`predict2`) and dashed/underscored variants:
+The following figures show examples of outputs:
 
-```python
-match = re.fullmatch(r"predict[-_]?(\d+)", name)
-if match:
-		numbered.append((int(match.group(1)), path))
-```
+<img src="other_document/vlm_qna_interface.png" width="500">
 
-### 4.2 VLM Caption Overlay
-- Captions are generated per selected frame policy.
-- Adaptive mode updates captions only when scene change exceeds threshold and minimum time gap is met.
-- Captions are rendered on a high-contrast top banner for readability.
+*Figure: The Stage 3 Q&A widget in action. A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.*
 
-### 4.3 Q&A Mode
-- User selects a timestamp.
+<img src="other_document/vlm_caption_highway.png" width="500">
+
+*Caption: VLM-generated description of a multi-lane urban road scene (exact text visible in the frame banner).*
+
+#### 4.3.2 Q&A Mode
+- The user selects a timestamp.
 - One frame is sampled and sent to VLM.
 - Output prioritizes direct answer + evidence-oriented explanation.
 
@@ -258,39 +253,7 @@ target_idx = int(round(max(0.0, float(sec)) * fps))
 cap.set(cv2.CAP_PROP_POS_FRAMES, target_idx)
 ret, frame = cap.read()
 ```
-
-<img src="other_document/vlm_qna_interface.png" width="500">
-
-*Figure: The Stage 3 Q&A widget in action. A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.*
-
-### 4.4 Robustness Improvements
-- Deterministic video selection priority:
-	`output_video` -> `input_video` -> resolved predict video.
-- Empty-response fallback retry for Q&A prompt.
-- Widget/session guards to reduce duplicated callback behavior during reruns.
-
-## 5. Outputs
-Artifacts are produced in pipeline order:
-
-- **Stage 1** — fine-tuned weights: `weights/yolo/best.pt`
-- **Stage 2a** — CLIP probe weights: `weights/clip/linear_probe/{linear_probe_weights.pt, class_names.json, config.json}`
-- **Stage 2b** — annotated video: `runs_output/detect/clip_predict/annotated_video.mp4`
-- **Stage 3** — captioned video: `runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4`
-  (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
-- **Stage 4** — segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4` (pretrained SegFormer-B5 on Cityscapes, independent of Stages 1–3)
-- **Stage 1 (optional)** — compressed YOLO-only video: `runs_output/detect/predict*/converted_mp4/*_compressed.mp4` (produced by the Stage 1 `ffmpeg` cell, not by Stage 3)
-
-### Stage 2b Output Example
-
-![Stage 2b — YOLO + CLIP brand overlay on dashcam frame](other_document/clip_yolo_result_check.png)
-
-*Figure: A representative single-frame validation check from the Stage 2b pipeline. YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).*
-
-![Stage 2b — CLIP brand overlay on running video output](other_document/clip%20linear%20probe%20video.png)
-
-*Figure: A frame extracted from the actual Stage 2b annotated video output. The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.*
-
-### Stage 3 Output Examples (VLM Adaptive Captioning)
+The following figure shows the Q&A interface of the VLM.
 
 ![VLM caption — red car in rain approaching traffic light](other_document/vlm_caption_red_car_rain.png)
 
@@ -300,19 +263,26 @@ Artifacts are produced in pipeline order:
 
 *Caption: "A white truck and a pedestrian are crossing the road at a pedestrian crossing, with a red traffic light visible in the background."*
 
-![VLM caption — highway scene with buildings and traffic structures](other_document/vlm_caption_highway.png)
-
-*Caption: VLM-generated description of a multi-lane urban road scene (exact text visible in the frame banner).*
-
-**Insights from the VLM outputs:**
-
+#### 4.3.3 Insights from the VLM outputs
 - **Fluent natural language:** the VLM produces grammatically correct sentences with subject-verb-object structure, not keyword lists.
 - **Rich attribute extraction:** colour (red car, white truck), weather (rain), traffic state (red light), action (driving, crossing), and spatial relationships ("in the background").
 - **Scene-awareness:** the three captions above describe entirely different situations — rainy driving, pedestrian crossing, and urban highway — demonstrating that adaptive gating successfully triggers new captions only when the scene actually changes.
 - **Audience-ready:** a non-engineer can read any caption and immediately understand what the car sees. This validates the "Explain" stage goal — turning bounding boxes into a story.
 - **Complementary to detection:** YOLO sees "car, truck, pedestrian, trafficLight-Red"; the VLM narrates "A red car is driving down a wet road..." — the same scene, two representations, one for machines and one for humans.
 
-### Stage 4 Output Example (Semantic Segmentation)
+
+### 4.4 Stage 4 — Semantic Segmentation
+>**Corresponding notebook**: 04_semantic_segmentation.ipynb
+```mermaid
+flowchart LR
+    A["<b>Input Video</b><br/>original_videos/dashcam.mp4<br/>Independent of stages 1–3"]
+    --> B["<b>SegFormer-B5</b><br/>nvidia/segformer-b5-<br/>finetuned-cityscapes-1024-1024<br/>via Hugging Face Transformers"]
+    --> C["<b>Per-Frame Inference</b><br/>Upsampling via Nearest Neighbor <br/>Cityscapes Palette with 19 classes"]
+    --> F["<b>Alpha-Blended Overlay</b><br/>on Original Video"]
+    --> G["<b>Output</b><br/>runs_output/segmentation/<br/>cityscapes_segmented.mp4"]
+```
+- Load a pre-trained vision transformer 
+
 
 | Original | Segmentation Mask | Blended Overlay (α=0.5) |
 |---|---|---|
@@ -320,7 +290,7 @@ Artifacts are produced in pipeline order:
 
 *Figure: SegFormer-B5 (pretrained on Cityscapes) run on a dashcam frame. Left: original 960×540 input. Centre: 19-class Cityscapes pixel mask. Right: alpha-blended overlay (α=0.5) preserving scene structure while colouring road, vegetation, vehicles, and sky. The model processes 2,516 frames at ~5 it/s (total ~8 min 21 s) — a quality demonstration, not real-time.*
 
-**Insights from the segmentation outputs:**
+#### 4.4.1 Insights from the segmentation outputs
 
 - **Instant quality without training:** SegFormer-B5 reaches 84% mIoU out-of-the-box on Cityscapes. No fine-tuning was needed for the dashcam domain — the pretrained weights generalise directly.
 - **Fine-grained scene geometry:** The mask distinguishes road, sidewalk, vegetation, traffic structures, and vehicles at pixel level — information YOLO bounding boxes cannot capture.
