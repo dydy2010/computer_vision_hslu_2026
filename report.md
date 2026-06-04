@@ -15,8 +15,8 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 - Export compact outputs suitable for the final PowerPoint presentation.
 
 ## 3. Data and Environment
-- **YOLO dataset:** Self-Driving-Car-3 (Roboflow), 11 classes (`biker, car, pedestrian, trafficLight*, truck`); kept locally, not pushed to git.
-- **CLIP probe dataset:** 20-class car-brand image set (European-biased: Audi, BMW, Chevrolet, Citroen, Dacia, Fiat, Ford, Honda, Hyundai, Kia, Mercedes, Nissan, Opel, Peugeot, Renault, Seat, Skoda, Tofaş, Toyota, Volkswagen). Probe trained on Kaggle.
+- **YOLO dataset:** Self-Driving-Car-3 (Roboflow), 11 classes (`biker, car, pedestrian, trafficLight*, truck`), 11'000 pictures; kept locally, not pushed to git.
+- **CLIP probe dataset:** 20-class car-brand image set (European-biased: Audi, BMW, Chevrolet, Citroen, Dacia, Fiat, Ford, Honda, Hyundai, Kia, Mercedes, Nissan, Opel, Peugeot, Renault, Seat, Skoda, Tofaş, Toyota, Volkswagen). Between 350 and 14'000 pictures per car brand (average is 4'350 pictures per car brand). Probe trained on Kaggle.
 - **Artifacts:** `weights/yolo/best.pt`, `weights/clip/linear_probe/{linear_probe_weights.pt, class_names.json, config.json}`.
 - **Inference outputs:** `runs_output/detect/clip_predict/` (Stage 2 video) and `runs_output/detect/.../vlm_overlay/` (Stage 3 video + log).
 - **VLM runtime:** Ollama + `qwen3-vl:4b` (local).
@@ -60,7 +60,7 @@ The following figure presents the confusion matrix of the trained YOLO model.
 
 It appears that the dataset is quite unbalanced and the `car` class has the highest count. Otherwise, the main issue are object not being detected at all (predicted as background). The class with the lowest accuracy is `pedestrian`.
 
-### 4.4 Stage 2a — CLIP linear probe
+### 4.2 Stage 2a — CLIP linear probe
 >**Corresponding notebook**: 02a_clip_probe_train.ipynb
 ```mermaid
 flowchart LR
@@ -70,6 +70,52 @@ flowchart LR
     --> D["<b>Evaluation</b><br/>Precision · Recall · Accuracy<br/>Comparison zero-shot vs linear  probe"]
     --> E["<b>Export</b><br/>weights/clip/linear_probe/<br/>linear_probe_weights.pt"]
 ```
+- The images dataset is splitted into trainning (70%), validation (15%) and testing (15%) datasets.
+- A few images are visualized for 12 classes.
+- The `ViT-B-32` OpenCLIP model is loaded (pretrained on the `laion2b_s34b_b79k` dataset).
+- The car brands names are encoded into embeddings via the OpenCLIP text encoder.
+- First, a zero-shot classification is performed. Each image is pre-processed with OpenCLIP's transform and encoded into an image embedding. The cosine similarity between each image and all car brands text embeddings is computed. A softmax is then performed to get the probability distribution over all brands. The brand with the highest probability is assigned to the picture.
+- Then, a linear probe is fitted on top of the CLIP model. It is a single layer neural network applying a affine linear transform to the incoming data.
+- The performances of the zero-shot CLIP model and the linear probe with CLIP model are compared.
+
+#### 4.2.1 Results
+The figure below shows the confusion matrix for the zero-shot CLIP model.
+
+<img src="other_document/OpenCLIP-confusion-matrix.png" width="500">
+
+*Figure: Confusion matrix for the zero-shot CLIP model*
+
+The main diagonal clearly stands out, showing good overall accuracy of the zero-shot model.
+
+Possible causes of the good and bad classification of the zero-shot model were investigated by visualizing examples of right and wrong classification with very high confidence rates.
+
+<img src="other_document/CLIP-best-zero-shot-classes.png" width="700">
+
+*Figure: Pictures of car correctly classified with high confidence rate*
+
+<img src="other_document/CLIP-worst-zero-shot-classes.png" width="700">
+
+*Figure: Pictures of car wrongly classified with high confidence rate*
+
+It seems like the model sometimes bases its brand recognition based on the overall picture rather than on the car itself. Indeed, the pictures with the highest confidence rates are those where the logo of a brand is clearly visble on a wall in the background. The model then assigns the class to the background logo regardless of the car in front. This behaviour is logical for a CLIP model as it was trained to associate text with a picture, using the entire picture.
+
+For at least one of the pictures, the brand label is wrong (third picture from the right in the upper row of the wrongly classified examples). The class chosen by the model is right (Audi) wheras the label is wrong (Fiat). One of the wrongly classified picture is not a car att all. Those observations suggest that the dataset could maybe benefit from some cleaning.
+
+The following figure shows the training loss and accuracy evolution of the linear probe as the number of epochs increases.
+
+<img src="other_document/training-curves-linear-probe-CLIP.png" width="500">
+
+*Figure: Training loss and accuracy evolution vs training epochs for the linear probe*
+
+The loss and the accuracy curves are well stabilized since approximately 20 epochs for both the training and the validation dataset. As no increase of the loss for the validation data appears, the linear probe can be considered as well trained and not overfitted.
+
+The following figure presents a comparison between the accuracy of the zero-shot CLIP model and the CLIP model with linear probe.
+
+<img src="other_document/OpenCLIP-pre-class-accuracy-zero-shot-vs-linear-probe.png" width="700">
+
+*Figure: Comparison of the accuracy of the classification by the zero-shot CLIP model and the CLIP model with linear probe*
+
+The overall accuracy is better with the linear probe than without (79.79% vs 54.95%): most of the classes benefit from the linear probe, especially the Fiat, Seat and Tofas brands. However, some of the class do not, for example Audi, BMW, Dacia Skoda and Citroen. In general, the performances accross all brands are more homogenous.
 
 ### 4.2.2 Stage 2b — YOLO+CLIP video
 >**Corresponding notebook**: 02b_yolo_clip_video.ipynb
