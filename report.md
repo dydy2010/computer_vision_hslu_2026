@@ -1,13 +1,14 @@
 
-# Project Report — YOLO + CLIP + VLM Captioned Dashcam Demo
+# HSLU Computer Vision Project: YOLO + CLIP + VLM Captioned Dashcam Demo
 
-> **Final deliverable:** PowerPoint presentation (`Computer_Vision_Presentation.pptx`, generated via `generate_presentation.py`) + this report + figures + demo video stills/clips. Code and notebooks are operational; DevOps (env pinning, repro scripts, dataset hygiene) is ongoing.
+> **Date:** June 9th 2026
+> **Authors:** Dongyuan Gao & Solène Cosandey
 
 ## 1. Project Summary
 This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to turn raw dashcam video into an annotated, narrated, and queryable street-understanding demo. The core insight is that accurate detection alone does not build human trust — the same scene needs two representations: bounding boxes for machines, and plain language for people. The pipeline demonstrates this end-to-end, producing an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
 
 ## 2. Objectives
-- Detect driving-scene objects with YOLO (11 self-driving classes).
+- Detect driving-scene objects with YOLO (11 self-driving related classes).
 - Add per-vehicle car-brand recognition via CLIP image embeddings + a trained linear probe.
 - Add VLM-based scene understanding and audience-friendly captions.
 - Provide a simple Q&A interface for selected timestamps.
