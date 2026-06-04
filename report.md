@@ -38,7 +38,7 @@ flowchart LR
     --> C["<b>Evaluation</b><br/>Pecision · Recall · <br/> mAP@0.5 · mAP@0.5:0.95"]
     --> D["<b>Export</b><br/>weights/yolo/best.pt"]
 ```
-- The images dataset is splitted into trainning (80%), validation (10%) and testing (10%) datasets.
+- The images dataset is split into trainning (80%), validation (10%) and testing (10%) datasets.
 - A few images are visualized with the bouding boxes and labels displayed on the image.
 - The YOLO model is loaded (pretrained on 80 classes of the COCO dataset). The `YOLO26s` model is based on approximately 19 millions parameters, and is considered as a medium-size model. This model was chosen as a compromise between accuracy and size (and therefore training speed).
 - The number of epochs is the number of times the YOLO model will use see each image of the training data set during the training. The patience is the maximum number of epochs that the training will wait without any performance increase before early stopping the training.
@@ -150,7 +150,7 @@ flowchart LR
     --> D["<b>Evaluation</b><br/>Precision · Recall · Accuracy<br/>Comparison zero-shot vs linear  probe"]
     --> E["<b>Export</b><br/>weights/clip/linear_probe/<br/>linear_probe_weights.pt"]
 ```
-- The images dataset is splitted into trainning (70%), validation (15%) and testing (15%) datasets.
+- The images dataset is split into trainning (70%), validation (15%) and testing (15%) datasets.
 - A few images are visualized for 12 classes.
 - The `ViT-B-32` OpenCLIP model is loaded (pretrained on the `laion2b_s34b_b79k` dataset).
 - The car brands names are encoded into embeddings via the OpenCLIP text encoder.
@@ -177,7 +177,7 @@ Possible causes of the good and bad classification of the zero-shot model were i
 
 *Figure: Pictures of car wrongly classified with high confidence rate*
 
-It seems like the model sometimes bases its brand recognition based on the overall picture rather than on the car itself. Indeed, the pictures with the highest confidence rates are those where the logo of a brand is clearly visble on a wall in the background. The model then assigns the class to the background logo regardless of the car in front. This behaviour is logical for a CLIP model as it was trained to associate text with a picture, using the entire picture.
+It seems like the model sometimes bases its brand recognition on the overall picture rather than on the car itself. Indeed, the pictures with the highest confidence rates are those where the logo of a brand is clearly visble on a wall in the background. The model then assigns the class to the background logo regardless of the car in front. This behaviour is logical for a CLIP model as it was trained to associate text with a picture, using the entire picture.
 
 For at least one of the pictures, the brand label is wrong (third picture from the right in the upper row of the wrongly classified examples). The class chosen by the model is right (Audi) wheras the label is wrong (Fiat). One of the wrongly classified picture is not a car at all. Those observations suggest that the dataset could maybe benefit from some cleaning.
 
