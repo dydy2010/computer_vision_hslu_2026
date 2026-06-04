@@ -161,7 +161,7 @@ Possible causes of the good and bad classification of the zero-shot model were i
 
 It seems like the model sometimes bases its brand recognition based on the overall picture rather than on the car itself. Indeed, the pictures with the highest confidence rates are those where the logo of a brand is clearly visble on a wall in the background. The model then assigns the class to the background logo regardless of the car in front. This behaviour is logical for a CLIP model as it was trained to associate text with a picture, using the entire picture.
 
-For at least one of the pictures, the brand label is wrong (third picture from the right in the upper row of the wrongly classified examples). The class chosen by the model is right (Audi) wheras the label is wrong (Fiat). One of the wrongly classified picture is not a car att all. Those observations suggest that the dataset could maybe benefit from some cleaning.
+For at least one of the pictures, the brand label is wrong (third picture from the right in the upper row of the wrongly classified examples). The class chosen by the model is right (Audi) wheras the label is wrong (Fiat). One of the wrongly classified picture is not a car at all. Those observations suggest that the dataset could maybe benefit from some cleaning.
 
 The following figure shows the training loss and accuracy evolution of the linear probe as the number of epochs increases.
 
@@ -179,6 +179,15 @@ The following figure presents a comparison between the accuracy of the zero-shot
 
 The overall accuracy is better with the linear probe than without (79.79% vs 54.95%): most of the classes benefit from the linear probe, especially the Fiat, Seat and Tofas brands. However, some of the class do not, for example Audi, BMW, Dacia Skoda and Citroen. In general, the performances accross all brands are more homogenous.
 
+#### 4.2.2 Output examples
+![Stage 2b — YOLO + CLIP brand overlay on dashcam frame](other_document/clip_yolo_result_check.png)
+
+*Figure: A representative single-frame validation check from the Stage 2b pipeline. YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).*
+
+![Stage 2b — CLIP brand overlay on running video output](other_document/clip%20linear%20probe%20video.png)
+
+*Figure: A frame extracted from the actual Stage 2b annotated video output. The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.*
+
 ### 4.2.2 Stage 2b — YOLO+CLIP video
 >**Corresponding notebook**: 02b_yolo_clip_video.ipynb
 ```mermaid
@@ -189,6 +198,17 @@ flowchart LR
     --> G["<b>Annotated Video</b><br/>runs_output/detect/clip_predict/<br/>annotated_video.mp4"]
 ```
     Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.
+
+- The OpenCLIP model and its linear probe weights are loaded.
+- The fine-tuned YOLO model is loaded.
+- A video is loaded and processed frame by frame: 
+    1. A YOLO objects detection is performed.
+    2. If one of the detected classes is `car`, the bounding box of the car is cropped.
+    3. If the cropped picture is larger that 80px x 80px, the cropped image is passed to the CLIP model (with linear probe).
+    4. The CLIP model classifies the cropped picture.
+    5. If the confidence for the highest confidence brand is above 0.2, the classification is considered successful and the car label is replaced by the brand name.
+    5. The bounding boxes are drawn with labels on the frame.
+    7. The frames are reassembled into a video.
 
 ### 4.3 Stage 3 — VLM caption + Q&A
 >**Corresponding notebook**: 03_vlm_caption.ipynb
