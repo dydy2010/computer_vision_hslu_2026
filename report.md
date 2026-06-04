@@ -24,8 +24,8 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 
 ## 4. Implemented Pipeline
 
-### 4.0 Stage Map
-- **Stage 1 — YOLO fine-tune**: 01_yolo_finetune.ipynb
+### 4.1 Stage 1 — YOLO fine-tune
+>**Corresponding notebook**: 01_yolo_finetune.ipynb
 ```mermaid 
 flowchart LR
     A["<b>YOLO26s</b><br/>Pretrained Weights"]
@@ -33,7 +33,8 @@ flowchart LR
     --> C["<b>Evaluation</b><br/>Pecision · Recall · <br/> mAP@0.5 · mAP@0.5:0.95"]
     --> D["<b>Export</b><br/>weights/yolo/best.pt"]
 ```
-- **Stage 2a — CLIP linear probe**: 02a_clip_probe_train.ipynb
+### 4.4 Stage 2a — CLIP linear probe
+>**Corresponding notebook**: 02a_clip_probe_train.ipynb
 ```mermaid
 flowchart LR
     A["<b>Frozen OpenCLIP</b><br/>ViT-B-32<br/>laion2b_s34b_b79k"]
@@ -43,7 +44,8 @@ flowchart LR
     --> E["<b>Export</b><br/>weights/clip/linear_probe/<br/>linear_probe_weights.pt"]
 ```
 
-- **Stage 2b — YOLO+CLIP video**: 02b_yolo_clip_video.ipynb
+### 4.2.2 Stage 2b — YOLO+CLIP video
+>**Corresponding notebook**: 02b_yolo_clip_video.ipynb
 ```mermaid
 flowchart LR
     B["<b>YOLO Detection<br/>on video frames</b><br/>conf=0.2"]
@@ -53,7 +55,8 @@ flowchart LR
 ```
     Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.
 
-- **Stage 3 — VLM caption + Q&A**: 03_vlm_caption.ipynb
+### 4.3 Stage 3 — VLM caption + Q&A
+>**Corresponding notebook**: 03_vlm_caption.ipynb
 ```mermaid
 flowchart LR
     A["<b>Video Frames</b>"]
@@ -63,7 +66,8 @@ flowchart LR
     --> H["<b>Retry Fallback</b><br/>if Response Empty"]
 ```
 
-- **Stage 4 — Semantic Segmentation**: 04_semantic_segmentation.ipynb
+### 4.2.2 Stage 4 — Semantic Segmentation
+>**Corresponding notebook**: 04_semantic_segmentation.ipynb
 ```mermaid
 flowchart LR
     A["<b>Input Video</b><br/>original_videos/dashcam.mp4<br/>Independent of stages 1–3"]
