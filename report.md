@@ -1,4 +1,3 @@
-
 # HSLU Computer Vision Project: YOLO + CLIP + VLM Captioned Dashcam Demo
 
 > **Date:** June 9th 2026
@@ -26,13 +25,41 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 
 ### 4.1 Stage 1 — YOLO fine-tune
 >**Corresponding notebook**: 01_yolo_finetune.ipynb
+
 ```mermaid 
 flowchart LR
     A["<b>YOLO26s</b><br/>Pretrained Weights"]
-    --> B["<b>Fine-tuning</b><br/>imgsz=512 · batch=16 · epochs=30· patience=10"]
+    --> B["<b>Fine-tuning</b><br/>images size=512px · batch=16 · epochs=30 · patience=10"]
     --> C["<b>Evaluation</b><br/>Pecision · Recall · <br/> mAP@0.5 · mAP@0.5:0.95"]
     --> D["<b>Export</b><br/>weights/yolo/best.pt"]
 ```
+- The images dataset is splitted into trainning (80%), validation (10%) and testing (10%) datasets.
+- A few images are visualized with the bouding boxes and labels displayed on the image.
+- The YOLO model is loaded (pretrained on 80 classes of the COCO dataset). The `YOLO26s` model is based on approximately 19 millions parameters, and is considered as a medium-size model. This model was chosen as a compromise between accuracy and size (and therefore training speed).
+- The number of epochs is the number of times the YOLO model will use see each image of the training data set during the training. The patience is the maximum number of epochs that the training will wait without any performance increase before early stopping the training.
+- The batch size corresponds to the number of pictures processed and taken in consideration for the YOLO model weights update. It  was chosen as a balance between stability and noisyness of the back propagation updates, and the size of the memory needed. Bigger batches are associated with larger memory needs, less noisy and more stable back propagation weights updates, but can sometimes remain trapped in local minimas.
+- The mAP@50 is based on the Intersection over Union (IoU) metric used to characterize the goodness of bounding boxes fits. It compares the predicted and the labelled boxes and is computed as [area of overlap / area of union]. If this value meets a threshold of 0.5, the bounding box is considered as correct. The mAP@[50-95] computes the average of tha mAP scores for thresholds from 0.5 to 0.95. This metric is therefore stricter and therefore lower.
+
+#### 4.1.1 Results
+The following figure shows the training loss and performances evolution as the number of epochs increases.
+<img src="other_document/training loss yolo.png" width="500">
+
+*Figure: Training loss and performance metrics evolution vs training epochs*
+
+The bounding boxes and classes losses on the training data set decreases as the number of epochs increases. It does not seems to have reached a plateau for the maximum number of epochs and could likely still go lower with more epochs. However, the bounding boxes and classes losses on the validation data set seems to stabilize for the maximum number of epochs, indicating that further training (with more epochs) could lead to overfitting the model.
+The performances metrics (precision, recall mAP@50 and mAP@[50-95]) also seem to stabilize for the higher epochs numbers. 
+
+The figure below displays the main performance figures for the YOLO model at the end of the training process.
+
+<img src="other_document/precision_yolo_recall_map.png" width="150">
+
+The following figure presents the confusion matrix of the trained YOLO model.
+<img src="other_document/yolo_confusion_matrix.png" width="500">
+
+*Figure: Confusion matrix for the YOLO26s model*
+
+It appears that the dataset is quite unbalanced and the `car` class has the highest count. Otherwise, the main issue are object not being detected at all (predicted as background). The class with the lowest accuracy is `pedestrian`.
+
 ### 4.4 Stage 2a — CLIP linear probe
 >**Corresponding notebook**: 02a_clip_probe_train.ipynb
 ```mermaid
@@ -105,6 +132,7 @@ ret, frame = cap.read()
 ```
 
 ![VLM Q&A interface — user asking a question about the current frame](other_document/vlm_qna_interface.png)
+<img src="other_document/vlm_qna_interface.png" width="400">
 
 *Figure: The Stage 3 Q&A widget in action. A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.*
 
