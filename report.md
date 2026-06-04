@@ -47,7 +47,7 @@ flowchart LR
 
 #### 4.1.1 Results
 The following figure shows the training loss and performances evolution as the number of epochs increases.
-<img src="other_document/training loss yolo.png" width="500">
+<img src="other_document/training loss yolo.png" width="700">
 
 *Figure: Training loss and performance metrics evolution vs training epochs*
 
@@ -59,7 +59,7 @@ The figure below displays the main performance figures for the YOLO model at the
 <img src="other_document/precision_yolo_recall_map.png" width="150">
 
 The following figure presents the confusion matrix of the trained YOLO model.
-<img src="other_document/yolo_confusion_matrix.png" width="500">
+<img src="other_document/yolo_confusion_matrix.png" width="800">
 
 *Figure: Confusion matrix for the YOLO26s model*
 
@@ -161,7 +161,7 @@ flowchart LR
 #### 4.2.1 Results
 The figure below shows the confusion matrix for the zero-shot CLIP model.
 
-<img src="other_document/OpenCLIP-confusion-matrix.png" width="500">
+<img src="other_document/OpenCLIP-confusion-matrix.png" width="700">
 
 *Figure: Confusion matrix for the zero-shot CLIP model*
 
@@ -183,7 +183,7 @@ For at least one of the pictures, the brand label is wrong (third picture from t
 
 The following figure shows the training loss and accuracy evolution of the linear probe as the number of epochs increases.
 
-<img src="other_document/training-curves-linear-probe-CLIP.png" width="500">
+<img src="other_document/training-curves-linear-probe-CLIP.png" width="700">
 
 *Figure: Training loss and accuracy evolution vs training epochs for the linear probe*
 
@@ -191,7 +191,7 @@ The loss and the accuracy curves are well stabilized since approximately 20 epoc
 
 The following figure presents a comparison between the accuracy of the zero-shot CLIP model and the CLIP model with linear probe.
 
-<img src="other_document/OpenCLIP-pre-class-accuracy-zero-shot-vs-linear-probe.png" width="700">
+<img src="other_document/OpenCLIP-pre-class-accuracy-zero-shot-vs-linear-probe.png" width="800">
 
 *Figure: Comparison of the accuracy of the classification by the zero-shot CLIP model and the CLIP model with linear probe*
 
