@@ -180,11 +180,11 @@ The following figure presents a comparison between the accuracy of the zero-shot
 The overall accuracy is better with the linear probe than without (79.79% vs 54.95%): most of the classes benefit from the linear probe, especially the Fiat, Seat and Tofas brands. However, some of the class do not, for example Audi, BMW, Dacia Skoda and Citroen. In general, the performances accross all brands are more homogenous.
 
 #### 4.2.2 Output examples
-![Stage 2b — YOLO + CLIP brand overlay on dashcam frame](other_document/clip_yolo_result_check.png)
+<img src="other_document/clip_yolo_result_check.png" width="500">
 
 *Figure: A representative single-frame validation check from the Stage 2b pipeline. YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).*
 
-![Stage 2b — CLIP brand overlay on running video output](other_document/clip%20linear%20probe%20video.png)
+<img src="other_document/clip%20linear%20probe%20video.png" width="500">
 
 *Figure: A frame extracted from the actual Stage 2b annotated video output. The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.*
 
@@ -259,8 +259,7 @@ cap.set(cv2.CAP_PROP_POS_FRAMES, target_idx)
 ret, frame = cap.read()
 ```
 
-![VLM Q&A interface — user asking a question about the current frame](other_document/vlm_qna_interface.png)
-<img src="other_document/vlm_qna_interface.png" width="400">
+<img src="other_document/vlm_qna_interface.png" width="500">
 
 *Figure: The Stage 3 Q&A widget in action. A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.*
 
