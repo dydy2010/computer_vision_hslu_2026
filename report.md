@@ -64,6 +64,15 @@ The following figure presents the confusion matrix of the trained YOLO model.
 *Figure: Confusion matrix for the YOLO26s model*
 
 It appears that the dataset is quite unbalanced and the `car` class has the highest count. Otherwise, the main issue are object not being detected at all (predicted as background). The class with the lowest accuracy is `pedestrian`.
+Off-diagonal mass is concentrated in two expected patterns: (1) `car` ↔ `truck` confusion — visually similar at distance or when occluded; (2) traffic-light variant cross-labeling — arrow signals (RedLeft, GreenLeft) occasionally confused with their parent class. Pedestrian and biker show minimal false negatives to background, indicating the model does not simply miss small objects.
+
+The following figure shows the precision-recall curve on the validation data set.
+
+![YOLO26s precision-recall curve on validation set](other_document/yolo_pr_curve.png)
+
+*Figure: Box-level precision-recall curve across all 11 classes*
+
+The smooth, high-area curve confirms that the detector maintains strong precision even as recall increases — a hallmark of a well-calibrated model with sufficient feature capacity. The C2PSA backbone's attention mechanism helps preserve precision on hard classes (pedestrian, biker) that would otherwise suffer from low-resolution feature maps.*
 
 #### Comparison between YOLOv10n and YOLOv26s
 YOLOv10n was initially used. Later, YOLOv26n was introduced. The impact of this architecture change was analyzed in the following section.
@@ -191,11 +200,15 @@ The overall accuracy is better with the linear probe than without (79.79% vs 54.
 #### 4.2.2 Output examples
 <img src="other_document/clip_yolo_result_check.png" width="500">
 
-*Figure: A representative single-frame validation check from the Stage 2b pipeline. YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).*
+*Figure: A representative single-frame validation check from the Stage 2b pipeline*
+
+YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic "car" boxes become specific brand identities (BMW, Peugeot, etc.).
 
 <img src="other_document/clip%20linear%20probe%20video.png" width="500">
 
-*Figure: A frame extracted from the actual Stage 2b annotated video output. The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.*
+*Figure: A frame extracted from the actual Stage 2b annotated video output*
+
+The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.
 
 ### 4.2.2 Stage 2b — YOLO+CLIP video
 >
@@ -254,7 +267,9 @@ The following figures show examples of outputs:
 
 <img src="other_document/vlm_qna_interface.png" width="500">
 
-*Figure: The Stage 3 Q&A widget in action. A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.*
+*Figure: The Stage 3 Q&A widget in action*
+
+A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.
 
 <img src="other_document/vlm_caption_highway.png" width="500">
 
@@ -303,8 +318,11 @@ flowchart LR
     --> F["<b>Alpha-Blended Overlay</b><br/>on Original Video"]
     --> G["<b>Output</b><br/>runs_output/segmentation/<br/>cityscapes_segmented.mp4"]
 ```
-- Load a pre-trained vision transformer 
+- SegFormer-B5 is loaded.
+- It is Vision Transformer encoder (captures global context) with a lightweight Mutli Layers Perceptron (MLP) decoder (defines sharp pixel boundaries).
+- The videos as processed frame by frame.
 
+#### 4.4.1 Results
 
 | Original | Segmentation Mask | Blended Overlay (α=0.5) |
 |---|---|---|
@@ -312,7 +330,7 @@ flowchart LR
 
 *Figure: SegFormer-B5 (pretrained on Cityscapes) run on a dashcam frame. Left: original 960×540 input. Centre: 19-class Cityscapes pixel mask. Right: alpha-blended overlay (α=0.5) preserving scene structure while colouring road, vegetation, vehicles, and sky. The model processes 2,516 frames at ~5 it/s (total ~8 min 21 s) — a quality demonstration, not real-time.*
 
-#### 4.4.1 Insights from the segmentation outputs
+#### 4.4.2 Insights from the segmentation outputs
 
 - **Instant quality without training:** SegFormer-B5 reaches 84% mIoU out-of-the-box on Cityscapes. No fine-tuning was needed for the dashcam domain — the pretrained weights generalise directly.
 - **Fine-grained scene geometry:** The mask distinguishes road, sidewalk, vegetation, traffic structures, and vehicles at pixel level — information YOLO bounding boxes cannot capture.
@@ -321,6 +339,12 @@ flowchart LR
 - **Small-object limits:** Pedestrians, traffic lights, and signs are often only a few dozen pixels in a 960×540 frame. SegFormer may mislabel or "smear" distant/occluded pedestrians — safety-critical detection still belongs to YOLO.
 - **Temporal jitter:** Per-frame inference without temporal smoothing (optical flow or multi-frame fusion) causes label flicker on moving vehicles and pedestrians. A car may flicker between `car` and `truck` across frames.
 
+## 5. Robustness Improvements
+- Deterministic video selection priority:
+	`output_video` -> `input_video` -> resolved predict video.
+- Empty-response fallback retry for Q&A prompt.
+- Widget/session guards to reduce duplicated callback behavior during reruns.
+
 ## 6. Current Results
 - **Detection:** YOLO26s fine-tuned on Self-Driving-Car-3 achieves P=0.874, R=0.754, mAP@0.5=0.842, mAP@0.5:0.95=0.515 — a substantial lift over the YOLOv10n baseline (mAP@0.5 +24.7%, strict mAP +32.7%).
 - **Enrichment:** CLIP linear probe reaches 79.8% Top-1 accuracy on 20 car brands (vs. 54.95% zero-shot), validated on a held-out test split.
@@ -328,16 +352,6 @@ flowchart LR
 - **Segmentation:** SegFormer-B5 delivers 84% mIoU on Cityscapes 19 classes out of the box, producing quality pixel-level scene overlays.
 - **End-to-end:** Stages 1→2b→3 run sequentially on a single local GPU; Stage 4 runs independently on the same input video.
 
-
-### Validation Visual Evidence
-
-![YOLO26s confusion matrix on validation set](other_document/yolo_confusion_matrix.png)
-
-*Figure: Normalised confusion matrix on the validation split (2,980 images, 19,514 instances). Strong diagonal dominance confirms correct classification for most classes. Off-diagonal mass is concentrated in two expected patterns: (1) `car` ↔ `truck` confusion — visually similar at distance or when occluded; (2) traffic-light variant cross-labeling — arrow signals (RedLeft, GreenLeft) occasionally confused with their parent class. Pedestrian and biker show minimal false negatives to background, indicating the model does not simply miss small objects.*
-
-![YOLO26s precision-recall curve on validation set](other_document/yolo_pr_curve.png)
-
-*Figure: Box-level precision-recall curve across all 11 classes. The smooth, high-area curve confirms that the detector maintains strong precision even as recall increases — a hallmark of a well-calibrated model with sufficient feature capacity. The C2PSA backbone's attention mechanism helps preserve precision on hard classes (pedestrian, biker) that would otherwise suffer from low-resolution feature maps.*
 
 ## 7. Known Limits
 - **Stage 2b labeling**: brand confidence is not thresholded — even a ~5 % top-1 brand is drawn on the box.
