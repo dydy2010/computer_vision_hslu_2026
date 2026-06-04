@@ -2,6 +2,7 @@
 # HSLU Computer Vision Project: YOLO + CLIP + VLM Captioned Dashcam Demo
 
 > **Date:** June 9th 2026
+
 > **Authors:** Dongyuan Gao & Solène Cosandey
 
 ## 1. Project Summary
@@ -24,12 +25,53 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 ## 4. Implemented Pipeline
 
 ### 4.0 Stage Map
-- **Stage 1 — YOLO fine-tune** (`01_yolo_finetune.ipynb`): `yolo26s.pt` → fine-tune (`imgsz=512`, `batch=16`, `epochs=30`, `patience=10`) → eval (`model.val()` for P/R/mAP@0.5/mAP@0.5:0.95) → export `weights/yolo/best.pt`.
-- **Stage 2a — CLIP linear probe** (`02a_clip_probe_train.ipynb`): freeze OpenCLIP `ViT-B-32`/`laion2b_s34b_b79k`, cache image embeddings once, train `nn.Linear(512, 20)` (Adam `lr=1e-3`, `wd=1e-4`, early stop `patience=7`, 70/15/15 stratified split) → export to `weights/clip/linear_probe/`.
-- **Stage 2b — YOLO+CLIP video** (`02b_yolo_clip_video.ipynb`): per frame YOLO `conf=0.2`; for each detection where `class == "car"` and crop ≥ 80×80, crop → CLIP → L2-normalize → linear probe → top-1 brand + softmax confidence → label `"<brand> (<conf>)"`. Output: `runs_output/detect/clip_predict/annotated_video.mp4`.
-  - *Confidence threshold:* YOLO outputs a raw score (objectness × class probability) per box. `conf=0.2` is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Lowered from 0.4 to catch more distant/occluded cars without excessive false positives.
-- **Stage 3 — VLM caption + Q&A** (`03_vlm_caption.ipynb`): local `qwen3-vl:4b` via Ollama; adaptive captioning (gray-frame `absdiff().mean() ≥ 12.0` AND ≥ `5.0 s` since last caption); banner overlay; Q&A widget seeks by frame index, single-frame reasoning, fallback retry on empty response.
-- **Stage 4 — Semantic Segmentation** (`04_semantic_segmentation.ipynb`): pretrained `nvidia/segformer-b5-finetuned-cityscapes-1024-1024` via Hugging Face Transformers. Per-frame inference → nearest-neighbor upsampling → Cityscapes 19-class palette → alpha-blended overlay on original video. Output: `runs_output/segmentation/cityscapes_segmented.mp4`. Independent of Stages 1–3; reads `original_videos/dashcam.mp4` directly.
+- **Stage 1 — YOLO fine-tune**: 01_yolo_finetune.ipynb
+```mermaid 
+flowchart LR
+    A["<b>YOLO26s</b><br/>Pretrained Weights"]
+    --> B["<b>Fine-tuning</b><br/>imgsz=512 · batch=16 · epochs=30· patience=10"]
+    --> C["<b>Evaluation</b><br/>Pecision · Recall · <br/> mAP@0.5 · mAP@0.5:0.95"]
+    --> D["<b>Export</b><br/>weights/yolo/best.pt"]
+```
+- **Stage 2a — CLIP linear probe**: 02a_clip_probe_train.ipynb
+```mermaid
+flowchart LR
+    A["<b>Frozen OpenCLIP</b><br/>ViT-B-32<br/>laion2b_s34b_b79k"]
+    --> B["<b>Images preprocessing</b><br/>CLIP Embedding · Encode<br/>L2 Normalize"]
+    --> C["<b>Train Linear Probe</b><br/>nn.Linear(512,20)<br/>Adam · lr=1e-3 · wd=1e-4<br/>Early Stop · patience=7<br/>70/15/15 Stratified Split"]
+    --> D["<b>Evaluation</b><br/>Precision · Recall · Accuracy<br/>Comparison zero-shot vs linear  probe"]
+    --> E["<b>Export</b><br/>weights/clip/linear_probe/<br/>linear_probe_weights.pt"]
+```
+
+- **Stage 2b — YOLO+CLIP video**: 02b_yolo_clip_video.ipynb
+```mermaid
+flowchart LR
+    B["<b>YOLO Detection<br/>on video frames</b><br/>conf=0.2"]
+    --> C["<b>Crop car bounding boxes</b><br/>class='car'<br/>bounding box size ≥ 80×80<br/>Frame preprocessing"]
+    --> E["<b>CLIP + Linear Probe</b><br/>Brand Classification<br/>Top-1 Brand +<br/>Softmax Confidence"]
+    --> G["<b>Annotated Video</b><br/>runs_output/detect/clip_predict/<br/>annotated_video.mp4"]
+```
+    Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.
+
+- **Stage 3 — VLM caption + Q&A**: 03_vlm_caption.ipynb
+```mermaid
+flowchart LR
+    A["<b>Video Frames</b>"]
+    --> B["<b>Adaptive Caption Trigger</b><br/>gray-frame: absdiff().mean() ≥ 12.0<br/>and ≥ 5.0 s since last caption"]
+    --> C["<b>Caption Generation</b><br/>Qwen3-VL:4B via Ollama</br>Banner overlay, same caption until next one"]
+    --> F["<b>Q&A Widget</b><br/>Seek by Frame Index <br/> Single-Frame Reasoning"]
+    --> H["<b>Retry Fallback</b><br/>if Response Empty"]
+```
+
+- **Stage 4 — Semantic Segmentation**: 04_semantic_segmentation.ipynb
+```mermaid
+flowchart LR
+    A["<b>Input Video</b><br/>original_videos/dashcam.mp4<br/>Independent of stages 1–3"]
+    --> B["<b>SegFormer-B5</b><br/>nvidia/segformer-b5-<br/>finetuned-cityscapes-1024-1024<br/>via Hugging Face Transformers"]
+    --> C["<b>Per-Frame Inference</b><br/>Upsampling via Nearest Neighbor <br/>Cityscapes Palette with 19 classes"]
+    --> F["<b>Alpha-Blended Overlay</b><br/>on Original Video"]
+    --> G["<b>Output</b><br/>runs_output/segmentation/<br/>cityscapes_segmented.mp4"]
+```
 
 ### 4.1 Detection and Input Resolution
 - YOLO outputs are read from `runs_output/detect`.
