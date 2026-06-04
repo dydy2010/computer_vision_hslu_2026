@@ -24,7 +24,12 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 ## 4. Implemented Pipeline
 
 ### 4.1 Stage 1 — YOLO fine-tune
+>
+>**Outputs**: `weights/yolo/best.pt`,
+optionally — compressed YOLO-only video: `runs_output/detect/predict*/converted_mp4/*_compressed.mp4`
+>
 >**Corresponding notebook**: 01_yolo_finetune.ipynb
+>
 
 ```mermaid 
 flowchart LR
@@ -123,7 +128,11 @@ These numbers come from the `model.val()` cell output on the trained `best.pt` (
 Beyond the numbers, this project demonstrates three practical CV principles in a single pipeline: (1) a frozen general-purpose backbone (CLIP) with a lightweight learned head is sufficient for strong domain adaptation; (2) a pretrained segmentation model generalises without fine-tuning when the target domain shares visual structure with the training domain; and (3) a local VLM can bridge the machine-human understanding gap when paired with intelligent temporal gating. Training artifacts (`results.png`, per-class curves, best weights, confusion matrix, PR curves) are in `runs_output/detect/selfdriving_v1-3/`; prediction grids are in `runs/detect/val/`.
 
 ### 4.2 Stage 2a — CLIP linear probe
+>**Outputs**: CLIP probe weights: `weights/clip/linear_probe/{linear_probe_weights.pt, class_names.json, config.json}`
+>
 >**Corresponding notebook**: 02a_clip_probe_train.ipynb
+>
+
 ```mermaid
 flowchart LR
     A["<b>Frozen OpenCLIP</b><br/>ViT-B-32<br/>laion2b_s34b_b79k"]
@@ -189,7 +198,11 @@ The overall accuracy is better with the linear probe than without (79.79% vs 54.
 *Figure: A frame extracted from the actual Stage 2b annotated video output. The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.*
 
 ### 4.2.2 Stage 2b — YOLO+CLIP video
+>
+>**Output**: annotated video: `runs_output/detect/clip_predict/annotated_video.mp4`
+>
 >**Corresponding notebook**: 02b_yolo_clip_video.ipynb
+
 ```mermaid
 flowchart LR
     B["<b>YOLO Detection<br/>on video frames</b><br/>conf=0.2"]
@@ -211,7 +224,11 @@ flowchart LR
     7. The frames are reassembled into a video.
 
 ### 4.3 Stage 3 — VLM caption + Q&A
+> **Output**: runs_output/detect/<selected_output_dir>/vlm_overlay/\*_vlm.mp4`
+  (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
+>
 >**Corresponding notebook**: 03_vlm_caption.ipynb
+
 ```mermaid
 flowchart LR
     A["<b>Video Frames</b>"]
@@ -272,7 +289,12 @@ The following figure shows the Q&A interface of the VLM.
 
 
 ### 4.4 Stage 4 — Semantic Segmentation
+>
+>**Output**: segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4` (pretrained SegFormer-B5 on Cityscapes, independent of Stages 1–3)
+>
 >**Corresponding notebook**: 04_semantic_segmentation.ipynb
+>
+
 ```mermaid
 flowchart LR
     A["<b>Input Video</b><br/>original_videos/dashcam.mp4<br/>Independent of stages 1–3"]
