@@ -41,12 +41,12 @@ flowchart LR
     --> C["<b>Evaluation</b><br/>Pecision · Recall · <br/> mAP@0.5 · mAP@0.5:0.95"]
     --> D["<b>Export</b><br/>weights/yolo/best.pt"]
 ```
-- The images dataset is split into trainning (80%), validation (10%) and testing (10%) datasets.
-- A few images are visualized with the bouding boxes and labels displayed on the image.
-- The YOLO model is loaded (pretrained on 80 classes of the COCO dataset). The `YOLO26s` model is based on approximately 19 millions parameters, and is considered as a medium-size model. This model was chosen as a compromise between accuracy and size (and therefore training speed).
-- The number of epochs is the number of times the YOLO model will use see each image of the training data set during the training. The patience is the maximum number of epochs that the training will wait without any performance increase before early stopping the training.
-- The batch size corresponds to the number of pictures processed and taken in consideration for the YOLO model weights update. It  was chosen as a balance between stability and noisyness of the back propagation updates, and the size of the memory needed. Bigger batches are associated with larger memory needs, less noisy and more stable back propagation weights updates, but can sometimes remain trapped in local minimas.
-- The mAP@50 is based on the Intersection over Union (IoU) metric used to characterize the goodness of bounding boxes fits. It compares the predicted and the labelled boxes and is computed as [area of overlap / area of union]. If this value meets a threshold of 0.5, the bounding box is considered as correct. The mAP@[50-95] computes the average of tha mAP scores for thresholds from 0.5 to 0.95. This metric is therefore stricter and therefore lower.
+- The image dataset is divided into training (80%), validation (10%), and testing (10%) sets.
+- A selection of images is visualized with their corresponding bounding boxes and class labels overlaid.
+- The YOLO model is initialized using weights pretrained on the 80 classes of the COCO dataset. The `YOLO26s` model contains approximately 19 million parameters and is considered a medium-sized model. It was selected as a compromise between detection accuracy and model size, resulting in a good balance between performance and training speed.
+- The number of epochs defines how many times the model processes the entire training dataset during training. The patience parameter specifies the maximum number of consecutive epochs without performance improvement before early stopping is triggered.
+- The batch size represents the number of images processed before updating the model weights. It was chosen to balance training stability, gradient noise, and memory usage. Larger batch sizes require more memory and generally produce smoother, more stable gradient updates, although they can sometimes lead the optimization process to converge to local minima.
+- The mAP@50 metric is based on the Intersection over Union (IoU), which measures how well a predicted bounding box matches the ground-truth annotation. IoU is calculated as the area of overlap divided by the area of union between the predicted and labeled boxes. A prediction is considered correct if its IoU is at least 0.5. The mAP@[50–95] metric averages the mAP over IoU thresholds ranging from 0.50 to 0.95, making it a more stringent evaluation metric that typically produces lower scores.
 
 #### 4.1.1 Results
 The following figure shows the training loss and performances evolution as the number of epochs increases.
@@ -153,13 +153,14 @@ flowchart LR
     --> D["<b>Evaluation</b><br/>Precision · Recall · Accuracy<br/>Comparison zero-shot vs linear  probe"]
     --> E["<b>Export</b><br/>weights/clip/linear_probe/<br/>linear_probe_weights.pt"]
 ```
-- The images dataset is split into trainning (70%), validation (15%) and testing (15%) datasets.
-- A few images are visualized for 12 classes.
-- The `ViT-B-32` OpenCLIP model is loaded (pretrained on the `laion2b_s34b_b79k` dataset).
-- The car brands names are encoded into embeddings via the OpenCLIP text encoder.
-- First, a zero-shot classification is performed. Each image is pre-processed with OpenCLIP's transform and encoded into an image embedding. The cosine similarity between each image and all car brands text embeddings is computed. A softmax is then performed to get the probability distribution over all brands. The brand with the highest probability is assigned to the picture.
-- Then, a linear probe is fitted on top of the CLIP model. It is a single layer neural network applying a affine linear transform to the incoming data.
-- The performances of the zero-shot CLIP model and the linear probe with CLIP model are compared.
+- The image dataset is split into training (70%), validation (15%), and testing (15%) sets.
+- A subset of images is visualized across 12 classes.
+- The `ViT-B-32` OpenCLIP model is loaded, using weights pretrained on the `laion2b_s34b_b79k` dataset.
+- Car brand names are converted into text embeddings using OpenCLIP’s text encoder.
+- First, a zero-shot classification approach is applied. Each image is preprocessed using OpenCLIP’s transformations and encoded into an image embedding. Cosine similarity is then computed between the image embedding and all car brand text embeddings. A softmax function is applied to convert these similarities into a probability distribution over the brands, and the brand with the highest probability is assigned as the prediction.
+- Next, a linear probe is trained on top of the CLIP model. This consists of a single linear layer that applies an affine transformation to the extracted features.
+- Finally, the performance of the zero-shot CLIP model is compared against that of the CLIP model with the linear probe.
+
 
 #### 4.2.1 Results
 The figure below shows the confusion matrix for the zero-shot CLIP model.
@@ -229,15 +230,15 @@ flowchart LR
     Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.
 
 - The OpenCLIP model and its linear probe weights are loaded.
-- The fine-tuned YOLO model is loaded.
-- A video is loaded and processed frame by frame: 
-    1. A YOLO objects detection is performed.
-    2. If one of the detected classes is `car`, the bounding box of the car is cropped.
-    3. If the cropped picture is larger that 80px x 80px, the cropped image is passed to the CLIP model (with linear probe).
-    4. The CLIP model classifies the cropped picture.
-    5. If the confidence for the highest confidence brand is above 0.2, the classification is considered successful and the car label is replaced by the brand name.
-    5. The bounding boxes are drawn with labels on the frame.
-    7. The frames are reassembled into a video.
+- The fine-tuned YOLO model is also loaded.
+- A video is processed frame by frame as follows:
+  1. Object detection is performed using YOLO.
+  2. If a detected object belongs to the `car` class, its bounding box is cropped from the frame.
+  3. If the cropped region is larger than 80×80 pixels, it is passed to the CLIP model (with the linear probe).
+  4. The CLIP model classifies the cropped car image.
+  5. If the highest predicted brand confidence exceeds 0.2, the prediction is accepted and the car label is replaced with the predicted brand name.
+  6. Bounding boxes and labels are drawn onto the frame.
+  7. The processed frames are then reassembled into a video.
 
 ### 4.3 Stage 3 — VLM caption + Q&A
 > **Output**: runs_output/detect/<selected_output_dir>/vlm_overlay/\*_vlm.mp4`
@@ -257,14 +258,14 @@ flowchart LR
 - A generic prompt, explaining to the model how to describe the image it receives is created.
 
 #### 4.3.1 VLM Caption Overlay
-- The video (with labels and bounding boxes from previous steps) is processed frame by frame:
-    1. The difference between the current frame and the previous one is computed: the frame is converted into black and white, and pixel-wise difference is computed. It is averaged.
-    2. If the average difference is greater than a specified threshold, the frame is considered as different enough from the previous one to generate a new caption.
-    3. A new caption is also generated if the time interval between the current frame and the previous caption is longer than a specified duration (maximum duration between 2 captions, even with little change on the frames).
-    4. To generate a caption, the frame along with the prompt are given to the VLM.
-    5. If the answer is empty, the same request will be sent again to the VLM.
-    5. The caption is rendered on a high-contrast top banner for readability.
-    6. Individual frames are re-assembled into a video.
+- The video (including the labels and bounding boxes produced in previous steps) is processed frame by frame.
+  1. The difference between the current frame and the previous frame is computed by converting both to grayscale and performing a pixel-wise comparison. The resulting differences are then averaged to obtain a single value.
+  2. If the average difference exceeds a predefined threshold, the frame is considered sufficiently different from the previous one to warrant generating a new caption.
+  3. A new caption is also generated if the time elapsed since the last caption exceeds a specified maximum interval, ensuring captions are produced periodically even when little visual change occurs.
+  4. To generate a caption, the current frame and a prompt are passed to a vision-language model (VLM).
+  5. If the model returns an empty response, the request is retried.
+  6. The resulting caption is rendered on a high-contrast banner at the top of the frame to ensure readability.
+  7. The processed frames are then reassembled into a final video.
 
 The following figures show examples of outputs:
 
