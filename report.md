@@ -74,10 +74,10 @@ The following figure shows the precision-recall curve on the validation data set
 
 The smooth, high-area curve confirms that the detector maintains strong precision even as recall increases — a hallmark of a well-calibrated model with sufficient feature capacity. The C2PSA backbone's attention mechanism helps preserve precision on hard classes (pedestrian, biker) that would otherwise suffer from low-resolution feature maps.*
 
-#### Comparison between YOLOv10n and YOLOv26s
+#### 4.1.1.1 Comparison between YOLOv10n and YOLOv26s
 YOLOv10n was initially used. Later, YOLOv26n was introduced. The impact of this architecture change was analyzed in the following section.
 
-### 6.1 YOLOv10n Baseline (before upgrade)
+##### YOLOv10n Baseline (before upgrade)
 
 These numbers come from the `selfdriving_v1-2` training run (`yolov10n.pt`, 30 epochs, `imgsz=512`, `batch=16`).
 
@@ -110,7 +110,7 @@ Per-class validation metrics (full table from `model.val()` cell output):
 
 The full table confirms the trend seen in the highlights: `car` and `trafficLight` classes dominate the mAP, while `pedestrian` and small traffic-light variants (Yellow, YellowLeft) remain the hardest due to scale, occlusion, and low instance counts.
 
-### 6.2 YOLO26s Comparison (after retraining)
+##### YOLO26s Comparison (after retraining)
 
 These numbers come from the `model.val()` cell output on the trained `best.pt` (run `selfdriving_v1-3`, 30 epochs, `imgsz=512`, `batch=16`).
 
