@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>HSLU Computer Vision Project: YOLO + CLIP + VLM Captioned Dashcam Demo</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="report_files/libs/clipboard/clipboard.min.js"></script>
+<script src="report_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="report_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="report_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="report_files/libs/quarto-html/popper.min.js"></script>
+<script src="report_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="report_files/libs/quarto-html/anchor.min.js"></script>
+<link href="report_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="report_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="report_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="report_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="report_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="report_files/libs/quarto-diagram/mermaid.min.js"></script>
+<script src="report_files/libs/quarto-diagram/mermaid-init.js"></script>
+<link href="report_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">HSLU Computer Vision Project: YOLO + CLIP + VLM Captioned Dashcam Demo</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>Date:</strong> June 9th 2026 <strong>Authors:</strong> Dongyuan Gao &amp; Solène Cosandey</p>
+</blockquote>
+<section id="project-summary" class="level2">
+<h2 class="anchored" data-anchor-id="project-summary">1. Project Summary</h2>
+<p>This project combines a fine-tuned <strong>YOLO26s</strong> detector, an <strong>OpenCLIP ViT-B-32</strong> backbone with a 20-class linear probe for car-brand recognition, and a local <strong>Qwen3-VL</strong> vision-language model to turn raw dashcam video into an annotated, narrated, and queryable street-understanding demo. The core insight is that accurate detection alone does not build human trust — the same scene needs two representations: bounding boxes for machines, and plain language for people. The pipeline demonstrates this end-to-end, producing an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional <code>ffmpeg</code> compression cell for the YOLO-only output.</p>
+</section>
+<section id="objectives" class="level2">
+<h2 class="anchored" data-anchor-id="objectives">2. Objectives</h2>
+<ul>
+<li>Detect driving-scene objects with YOLO (11 self-driving related classes).</li>
+<li>Add per-vehicle car-brand recognition via CLIP image embeddings + a trained linear probe.</li>
+<li>Add VLM-based scene understanding and audience-friendly captions.</li>
+<li>Provide a simple Q&amp;A interface for selected timestamps.</li>
+<li>Export compact outputs suitable for the final PowerPoint presentation.</li>
+</ul>
+</section>
+<section id="data-and-environment" class="level2">
+<h2 class="anchored" data-anchor-id="data-and-environment">3. Data and Environment</h2>
+<ul>
+<li><strong>YOLO dataset:</strong> Self-Driving-Car-3 (Roboflow), 11 classes (<code>biker, car, pedestrian, trafficLight*, truck</code>), 11’000 pictures; kept locally, not pushed to git.</li>
+<li><strong>CLIP probe dataset:</strong> 20-class car-brand image set (European-biased: Audi, BMW, Chevrolet, Citroen, Dacia, Fiat, Ford, Honda, Hyundai, Kia, Mercedes, Nissan, Opel, Peugeot, Renault, Seat, Skoda, Tofaş, Toyota, Volkswagen). Between 350 and 14’000 pictures per car brand (average is 4’350 pictures per car brand). Probe trained on Kaggle.</li>
+<li><strong>Artifacts:</strong> <code>weights/yolo/best.pt</code>, <code>weights/clip/linear_probe/{linear_probe_weights.pt, class_names.json, config.json}</code>.</li>
+<li><strong>Inference outputs:</strong> <code>runs_output/detect/clip_predict/</code> (Stage 2 video) and <code>runs_output/detect/.../vlm_overlay/</code> (Stage 3 video + log).</li>
+<li><strong>VLM runtime:</strong> Ollama + <code>qwen3-vl:4b</code> (local).</li>
+</ul>
+</section>
+<section id="implemented-pipeline" class="level2">
+<h2 class="anchored" data-anchor-id="implemented-pipeline">4. Implemented Pipeline</h2>
+<section id="stage-1-yolo-fine-tune" class="level3">
+<h3 class="anchored" data-anchor-id="stage-1-yolo-fine-tune">4.1 Stage 1 — YOLO fine-tune</h3>
+<blockquote class="blockquote">
+<p><strong>Outputs</strong>: <code>weights/yolo/best.pt</code>, optionally — compressed YOLO-only video: <code>runs_output/detect/predict*/converted_mp4/*_compressed.mp4</code></p>
+<p><strong>Corresponding notebook</strong>: 01_yolo_finetune.ipynb</p>
+</blockquote>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A["&lt;b&gt;YOLO26s&lt;/b&gt;&lt;br/&gt;Pretrained Weights"]
+    --&gt; B["&lt;b&gt;Fine-tuning&lt;/b&gt;&lt;br/&gt;images size=512px · batch=16 · epochs=30 · patience=10"]
+    --&gt; C["&lt;b&gt;Evaluation&lt;/b&gt;&lt;br/&gt;Pecision · Recall · &lt;br/&gt; mAP@0.5 · mAP@0.5:0.95"]
+    --&gt; D["&lt;b&gt;Export&lt;/b&gt;&lt;br/&gt;weights/yolo/best.pt"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ul>
+<li>The image dataset is divided into training (80%), validation (10%), and testing (10%) sets.</li>
+<li>A selection of images is visualized with their corresponding bounding boxes and class labels overlaid.</li>
+<li>The YOLO model is initialized using weights pretrained on the 80 classes of the COCO dataset. The <code>YOLO26s</code> model contains approximately 19 million parameters and is considered a medium-sized model. It was selected as a compromise between detection accuracy and model size, resulting in a good balance between performance and training speed.</li>
+<li>The number of epochs defines how many times the model processes the entire training dataset during training. The patience parameter specifies the maximum number of consecutive epochs without performance improvement before early stopping is triggered.</li>
+<li>The batch size represents the number of images processed before updating the model weights. It was chosen to balance training stability, gradient noise, and memory usage. Larger batch sizes require more memory and generally produce smoother, more stable gradient updates, although they can sometimes lead the optimization process to converge to local minima.</li>
+<li>The mAP@50 metric is based on the Intersection over Union (IoU), which measures how well a predicted bounding box matches the ground-truth annotation. IoU is calculated as the area of overlap divided by the area of union between the predicted and labeled boxes. A prediction is considered correct if its IoU is at least 0.5. The mAP@[50–95] metric averages the mAP over IoU thresholds ranging from 0.50 to 0.95, making it a more stringent evaluation metric that typically produces lower scores.</li>
+</ul>
+<section id="results" class="level4">
+<h4 class="anchored" data-anchor-id="results">4.1.1 Results</h4>
+<p>The following figure shows the training loss and performances evolution as the number of epochs increases. <img src="other_document/training loss yolo.png" width="700"></p>
+<p><em>Figure: Training loss and performance metrics evolution vs training epochs</em></p>
+<p>The bounding boxes and classes losses on the training data set decreases as the number of epochs increases. It does not seems to have reached a plateau for the maximum number of epochs and could likely still go lower with more epochs. However, the bounding boxes and classes losses on the validation data set seems to stabilize for the maximum number of epochs, indicating that further training (with more epochs) could lead to overfitting the model. The performances metrics (precision, recall mAP@50 and mAP@[50-95]) also seem to stabilize for the higher epochs numbers.</p>
+<p>The figure below displays the main performance figures for the YOLO model at the end of the training process.</p>
+<p><img src="other_document/precision_yolo_recall_map.png" width="150"></p>
+<p>The following figure presents the confusion matrix of the trained YOLO model. <img src="other_document/yolo_confusion_matrix.png" width="600"></p>
+<p><em>Figure: Confusion matrix for the YOLO26s model</em></p>
+<p>It appears that the dataset is quite unbalanced and the <code>car</code> class has the highest count. Otherwise, the main issue are object not being detected at all (predicted as background). The class with the lowest accuracy is <code>pedestrian</code>. Off-diagonal mass is concentrated in two expected patterns: (1) <code>car</code> ↔︎ <code>truck</code> confusion — visually similar at distance or when occluded; (2) traffic-light variant cross-labeling — arrow signals (RedLeft, GreenLeft) occasionally confused with their parent class. Pedestrian and biker show minimal false negatives to background, indicating the model does not simply miss small objects.</p>
+<p>The following figure shows the precision-recall curve on the validation data set.</p>
+<p><img src="other_document/yolo_pr_curve.png" width="500"></p>
+<p><em>Figure: Box-level precision-recall curve across all 11 classes</em></p>
+<p>The smooth, high-area curve confirms that the detector maintains strong precision even as recall increases — a hallmark of a well-calibrated model with sufficient feature capacity. The C2PSA backbone’s attention mechanism helps preserve precision on hard classes (pedestrian, biker) that would otherwise suffer from low-resolution feature maps.*</p>
+</section>
+<section id="comparison-between-yolov10n-and-yolov26s" class="level4">
+<h4 class="anchored" data-anchor-id="comparison-between-yolov10n-and-yolov26s">4.1.1.1 Comparison between YOLOv10n and YOLOv26s</h4>
+<p>YOLOv10n was initially used. Later, YOLOv26n was introduced. The impact of this architecture change was analyzed in the following section.</p>
+<section id="yolov10n-baseline-before-upgrade" class="level5">
+<h5 class="anchored" data-anchor-id="yolov10n-baseline-before-upgrade">YOLOv10n Baseline (before upgrade)</h5>
+<p>These numbers come from the <code>selfdriving_v1-2</code> training run (<code>yolov10n.pt</code>, 30 epochs, <code>imgsz=512</code>, <code>batch=16</code>).</p>
+<ul>
+<li><strong>Model</strong>: <code>yolov10n.pt</code> (COCO-pretrained, fine-tuned on Self-Driving-Car-3)</li>
+<li><strong>Training</strong>: <code>epochs=30</code>, <code>imgsz=512</code>, <code>batch=16</code>, <code>patience=10</code></li>
+</ul>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Precision</td>
+<td>0.801</td>
+</tr>
+<tr class="even">
+<td>Recall</td>
+<td>0.598</td>
+</tr>
+<tr class="odd">
+<td>mAP@0.5</td>
+<td>0.675</td>
+</tr>
+<tr class="even">
+<td>mAP@0.5:0.95</td>
+<td>0.388</td>
+</tr>
+</tbody>
+</table>
+<p>Per-class validation metrics (full table from <code>model.val()</code> cell output):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Class</th>
+<th>Images</th>
+<th>Instances</th>
+<th>Precision</th>
+<th>Recall</th>
+<th>mAP@0.5</th>
+<th>mAP@0.5:0.95</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>all</td>
+<td>2980</td>
+<td>19514</td>
+<td>0.801</td>
+<td>0.598</td>
+<td>0.675</td>
+<td>0.388</td>
+</tr>
+<tr class="even">
+<td>biker</td>
+<td>257</td>
+<td>405</td>
+<td>0.697</td>
+<td>0.608</td>
+<td>0.676</td>
+<td>0.373</td>
+</tr>
+<tr class="odd">
+<td>car</td>
+<td>2579</td>
+<td>12667</td>
+<td>0.826</td>
+<td>0.799</td>
+<td>0.856</td>
+<td>0.579</td>
+</tr>
+<tr class="even">
+<td>pedestrian</td>
+<td>727</td>
+<td>2292</td>
+<td>0.704</td>
+<td>0.433</td>
+<td>0.499</td>
+<td>0.261</td>
+</tr>
+<tr class="odd">
+<td>trafficLight</td>
+<td>296</td>
+<td>489</td>
+<td>0.786</td>
+<td>0.753</td>
+<td>0.802</td>
+<td>0.468</td>
+</tr>
+<tr class="even">
+<td>trafficLight-Green</td>
+<td>393</td>
+<td>1043</td>
+<td>0.756</td>
+<td>0.514</td>
+<td>0.587</td>
+<td>0.295</td>
+</tr>
+<tr class="odd">
+<td>trafficLight-GreenLeft</td>
+<td>40</td>
+<td>56</td>
+<td>0.753</td>
+<td>0.589</td>
+<td>0.598</td>
+<td>0.321</td>
+</tr>
+<tr class="even">
+<td>trafficLight-Red</td>
+<td>545</td>
+<td>1426</td>
+<td>0.836</td>
+<td>0.652</td>
+<td>0.747</td>
+<td>0.428</td>
+</tr>
+<tr class="odd">
+<td>trafficLight-RedLeft</td>
+<td>284</td>
+<td>377</td>
+<td>0.857</td>
+<td>0.629</td>
+<td>0.725</td>
+<td>0.421</td>
+</tr>
+<tr class="even">
+<td>trafficLight-Yellow</td>
+<td>34</td>
+<td>65</td>
+<td>0.750</td>
+<td>0.431</td>
+<td>0.471</td>
+<td>0.245</td>
+</tr>
+<tr class="odd">
+<td>trafficLight-YellowLeft</td>
+<td>5</td>
+<td>5</td>
+<td>0.875</td>
+<td>0.800</td>
+<td>0.845</td>
+<td>0.507</td>
+</tr>
+<tr class="even">
+<td>truck</td>
+<td>484</td>
+<td>689</td>
+<td>0.780</td>
+<td>0.689</td>
+<td>0.765</td>
+<td>0.474</td>
+</tr>
+</tbody>
+</table>
+<p>The full table confirms the trend seen in the highlights: <code>car</code> and <code>trafficLight</code> classes dominate the mAP, while <code>pedestrian</code> and small traffic-light variants (Yellow, YellowLeft) remain the hardest due to scale, occlusion, and low instance counts.</p>
+</section>
+<section id="yolo26s-comparison-after-retraining" class="level5">
+<h5 class="anchored" data-anchor-id="yolo26s-comparison-after-retraining">YOLO26s Comparison (after retraining)</h5>
+<p>These numbers come from the <code>model.val()</code> cell output on the trained <code>best.pt</code> (run <code>selfdriving_v1-3</code>, 30 epochs, <code>imgsz=512</code>, <code>batch=16</code>).</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th>YOLOv10n (baseline)</th>
+<th>YOLO26s (new)</th>
+<th>Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Precision</td>
+<td>0.801</td>
+<td><strong>0.874</strong></td>
+<td><strong>+0.073 (+9.1%)</strong></td>
+</tr>
+<tr class="even">
+<td>Recall</td>
+<td>0.598</td>
+<td><strong>0.754</strong></td>
+<td><strong>+0.156 (+26.1%)</strong></td>
+</tr>
+<tr class="odd">
+<td>mAP@0.5</td>
+<td>0.675</td>
+<td><strong>0.842</strong></td>
+<td><strong>+0.167 (+24.7%)</strong></td>
+</tr>
+<tr class="even">
+<td>mAP@0.5:0.95</td>
+<td>0.388</td>
+<td><strong>0.515</strong></td>
+<td><strong>+0.127 (+32.7%)</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Per-class mAP@0.5</strong> (selected highlights):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Class</th>
+<th>mAP@0.5</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>car</td>
+<td>0.882</td>
+<td>Strongest class — dominates the dataset</td>
+</tr>
+<tr class="even">
+<td>trafficLight</td>
+<td>0.914</td>
+<td>Excellent on standard upright lights</td>
+</tr>
+<tr class="odd">
+<td>trafficLight-RedLeft</td>
+<td>0.896</td>
+<td>Good even on less common arrow signals</td>
+</tr>
+<tr class="even">
+<td>truck</td>
+<td>0.869</td>
+<td>Better than expected for a medium-size detector</td>
+</tr>
+<tr class="odd">
+<td>pedestrian</td>
+<td>0.692</td>
+<td>Lowest class — small / occluded / distant pedestrians remain challenging</td>
+</tr>
+<tr class="even">
+<td>biker</td>
+<td>0.789</td>
+<td>Moderate — bicycle scale and pose variation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Takeaway:</strong> Upgrading from YOLOv10n to YOLO26s delivered a substantial accuracy lift across all metrics, with the biggest relative gains in recall (+26.1%) and strict mAP (+32.7%). The model successfully leverages COCO pretraining and the larger ~10.0 M parameter backbone to generalise on the 11-class Self-Driving-Car-3 dataset. Pedestrian detection remains the hardest class due to scale and occlusion.</p>
+<p>Beyond the numbers, this project demonstrates three practical CV principles in a single pipeline: (1) a frozen general-purpose backbone (CLIP) with a lightweight learned head is sufficient for strong domain adaptation; (2) a pretrained segmentation model generalises without fine-tuning when the target domain shares visual structure with the training domain; and (3) a local VLM can bridge the machine-human understanding gap when paired with intelligent temporal gating. Training artifacts (<code>results.png</code>, per-class curves, best weights, confusion matrix, PR curves) are in <code>runs_output/detect/selfdriving_v1-3/</code>; prediction grids are in <code>runs/detect/val/</code>.</p>
+</section>
+</section>
+</section>
+<section id="stage-2a-clip-linear-probe" class="level3">
+<h3 class="anchored" data-anchor-id="stage-2a-clip-linear-probe">4.2 Stage 2a — CLIP linear probe</h3>
+<blockquote class="blockquote">
+<p><strong>Outputs</strong>: CLIP probe weights: <code>weights/clip/linear_probe/{linear_probe_weights.pt, class_names.json, config.json}</code></p>
+<p><strong>Corresponding notebook</strong>: 02a_clip_probe_train.ipynb</p>
+</blockquote>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A["&lt;b&gt;Frozen OpenCLIP&lt;/b&gt;&lt;br/&gt;ViT-B-32&lt;br/&gt;laion2b_s34b_b79k"]
+    --&gt; B["&lt;b&gt;Images preprocessing&lt;/b&gt;&lt;br/&gt;CLIP Embedding · Encode&lt;br/&gt;L2 Normalize"]
+    --&gt; C["&lt;b&gt;Train Linear Probe&lt;/b&gt;&lt;br/&gt;nn.Linear(512,20)&lt;br/&gt;Adam · lr=1e-3 · wd=1e-4&lt;br/&gt;Early Stop · patience=7&lt;br/&gt;70/15/15 Stratified Split"]
+    --&gt; D["&lt;b&gt;Evaluation&lt;/b&gt;&lt;br/&gt;Precision · Recall · Accuracy&lt;br/&gt;Comparison zero-shot vs linear  probe"]
+    --&gt; E["&lt;b&gt;Export&lt;/b&gt;&lt;br/&gt;weights/clip/linear_probe/&lt;br/&gt;linear_probe_weights.pt"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ul>
+<li>The image dataset is split into training (70%), validation (15%), and testing (15%) sets.</li>
+<li>A subset of images is visualized across 12 classes.</li>
+<li>The <code>ViT-B-32</code> OpenCLIP model is loaded, using weights pretrained on the <code>laion2b_s34b_b79k</code> dataset.</li>
+<li>Car brand names are converted into text embeddings using OpenCLIP’s text encoder.</li>
+<li>First, a zero-shot classification approach is applied. Each image is preprocessed using OpenCLIP’s transformations and encoded into an image embedding. Cosine similarity is then computed between the image embedding and all car brand text embeddings. A softmax function is applied to convert these similarities into a probability distribution over the brands, and the brand with the highest probability is assigned as the prediction.</li>
+<li>Next, a linear probe is trained on top of the CLIP model. This consists of a single linear layer that applies an affine transformation to the extracted features.</li>
+<li>Finally, the performance of the zero-shot CLIP model is compared against that of the CLIP model with the linear probe.</li>
+</ul>
+<section id="results-1" class="level4">
+<h4 class="anchored" data-anchor-id="results-1">4.2.1 Results</h4>
+<p>The figure below shows the confusion matrix for the zero-shot CLIP model.</p>
+<p><img src="other_document/OpenCLIP-confusion-matrix.png" width="500"></p>
+<p><em>Figure: Confusion matrix for the zero-shot CLIP model</em></p>
+<p>The main diagonal clearly stands out, showing good overall accuracy of the zero-shot model.</p>
+<p>Possible causes of the good and bad classification of the zero-shot model were investigated by visualizing examples of right and wrong classification with very high confidence rates.</p>
+<p><img src="other_document/CLIP-best-zero-shot-classes.png" width="700"></p>
+<p><em>Figure: Pictures of car correctly classified with high confidence rate</em></p>
+<p><img src="other_document/CLIP-worst-zero-shot-classes.png" width="700"></p>
+<p><em>Figure: Pictures of car wrongly classified with high confidence rate</em></p>
+<p>It seems like the model sometimes bases its brand recognition on the overall picture rather than on the car itself. Indeed, the pictures with the highest confidence rates are those where the logo of a brand is clearly visble on a wall in the background. The model then assigns the class to the background logo regardless of the car in front. This behaviour is logical for a CLIP model as it was trained to associate text with a picture, using the entire picture.</p>
+<p>For at least one of the pictures, the brand label is wrong (third picture from the right in the upper row of the wrongly classified examples). The class chosen by the model is right (Audi) wheras the label is wrong (Fiat). One of the wrongly classified picture is not a car at all. Those observations suggest that the dataset could maybe benefit from some cleaning.</p>
+<p>The following figure shows the training loss and accuracy evolution of the linear probe as the number of epochs increases.</p>
+<p><img src="other_document/training-curves-linear-probe-CLIP.png" width="700"></p>
+<p><em>Figure: Training loss and accuracy evolution vs training epochs for the linear probe</em></p>
+<p>The loss and the accuracy curves are well stabilized since approximately 20 epochs for both the training and the validation dataset. As no increase of the loss for the validation data appears, the linear probe can be considered as well trained and not overfitted.</p>
+<p>The following figure presents a comparison between the accuracy of the zero-shot CLIP model and the CLIP model with linear probe.</p>
+<p><img src="other_document/OpenCLIP-pre-class-accuracy-zero-shot-vs-linear-probe.png" width="800"></p>
+<p><em>Figure: Comparison of the accuracy of the classification by the zero-shot CLIP model and the CLIP model with linear probe</em></p>
+<p>The overall accuracy is better with the linear probe than without (79.79% vs 54.95%): most of the classes benefit from the linear probe, especially the Fiat, Seat and Tofas brands. However, some of the class do not, for example Audi, BMW, Dacia Skoda and Citroen. In general, the performances accross all brands are more homogenous.</p>
+</section>
+<section id="output-examples" class="level4">
+<h4 class="anchored" data-anchor-id="output-examples">4.2.2 Output examples</h4>
+<p><img src="other_document/clip_yolo_result_check.png" width="500"></p>
+<p><em>Figure: A representative single-frame validation check from the Stage 2b pipeline</em></p>
+<p>YOLO26s detects vehicles (green bounding boxes); the CLIP linear probe then classifies each car crop into one of 20 brands and overlays the label with confidence. Trucks are excluded by design — the probe was trained on car-only images. The visual output demonstrates the end-to-end Detect → Enrich capability: generic “car” boxes become specific brand identities (BMW, Peugeot, etc.).</p>
+<p><img src="other_document/clip%20linear%20probe%20video.png" width="500"></p>
+<p><em>Figure: A frame extracted from the actual Stage 2b annotated video output</em></p>
+<p>The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each qualifying car crop, and the top-1 brand is overlaid in real time. This confirms the end-to-end pipeline works not just on static validation images but on continuous video — the same workflow at speed.</p>
+</section>
+</section>
+<section id="stage-2b-yoloclip-video" class="level3">
+<h3 class="anchored" data-anchor-id="stage-2b-yoloclip-video">4.2.2 Stage 2b — YOLO+CLIP video</h3>
+<blockquote class="blockquote">
+<p><strong>Output</strong>: annotated video: <code>runs_output/detect/clip_predict/annotated_video.mp4</code></p>
+<p><strong>Corresponding notebook</strong>: 02b_yolo_clip_video.ipynb</p>
+</blockquote>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    B["&lt;b&gt;YOLO Detection&lt;br/&gt;on video frames&lt;/b&gt;&lt;br/&gt;conf=0.2"]
+    --&gt; C["&lt;b&gt;Crop car bounding boxes&lt;/b&gt;&lt;br/&gt;class='car'&lt;br/&gt;bounding box size ≥ 80×80&lt;br/&gt;Frame preprocessing"]
+    --&gt; E["&lt;b&gt;CLIP + Linear Probe&lt;/b&gt;&lt;br/&gt;Brand Classification&lt;br/&gt;Top-1 Brand +&lt;br/&gt;Softmax Confidence"]
+    --&gt; G["&lt;b&gt;Annotated Video&lt;/b&gt;&lt;br/&gt;runs_output/detect/clip_predict/&lt;br/&gt;annotated_video.mp4"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p><em>Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.</em></p>
+<ul>
+<li>The OpenCLIP model and its linear probe weights are loaded.</li>
+<li>The fine-tuned YOLO model is also loaded.</li>
+<li>A video is processed frame by frame as follows:
+<ol type="1">
+<li>Object detection is performed using YOLO.</li>
+<li>If a detected object belongs to the <code>car</code> class, its bounding box is cropped from the frame.</li>
+<li>If the cropped region is larger than 80×80 pixels, it is passed to the CLIP model (with the linear probe).</li>
+<li>The CLIP model classifies the cropped car image.</li>
+<li>If the highest predicted brand confidence exceeds 0.2, the prediction is accepted and the car label is replaced with the predicted brand name.</li>
+<li>Bounding boxes and labels are drawn onto the frame.</li>
+<li>The processed frames are then reassembled into a video.</li>
+</ol></li>
+</ul>
+</section>
+<section id="stage-3-vlm-caption-qa" class="level3">
+<h3 class="anchored" data-anchor-id="stage-3-vlm-caption-qa">4.3 Stage 3 — VLM caption + Q&amp;A</h3>
+<blockquote class="blockquote">
+<p><strong>Output</strong>: runs_output/detect/<selected_output_dir>/vlm_overlay/*_vlm.mp4<code>(</code><selected_output_dir><code>=</code>clip_predict<code>if it exists, else the highest-numbered</code>predict*<code>, else</code>predict`)</selected_output_dir></selected_output_dir></p>
+<p><strong>Corresponding notebook</strong>: 03_vlm_caption.ipynb</p>
+</blockquote>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A["&lt;b&gt;Video Frames&lt;/b&gt;"]
+    --&gt; B["&lt;b&gt;Adaptive Caption Trigger&lt;/b&gt;&lt;br/&gt;gray-frame: absdiff().mean() ≥ 12.0&lt;br/&gt;and ≥ 5.0 s since last caption"]
+    --&gt; C["&lt;b&gt;Caption Generation&lt;/b&gt;&lt;br/&gt;Qwen3-VL:4B via Ollama&lt;/br&gt;Banner overlay, same caption until next one"]
+    --&gt; F["&lt;b&gt;Q&amp;A Widget&lt;/b&gt;&lt;br/&gt;Seek by Frame Index &lt;br/&gt; Single-Frame Reasoning"]
+    --&gt; H["&lt;b&gt;Retry Fallback&lt;/b&gt;&lt;br/&gt;if Response Empty"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ul>
+<li>A Vision Language Model (VLM) qwen3-vl:4b, powered by Ollama is used.</li>
+<li>A generic prompt, explaining to the model how to describe the image it receives is created.</li>
+</ul>
+<section id="vlm-caption-overlay" class="level4">
+<h4 class="anchored" data-anchor-id="vlm-caption-overlay">4.3.1 VLM Caption Overlay</h4>
+<ul>
+<li>The video (including the labels and bounding boxes produced in previous steps) is processed frame by frame.
+<ol type="1">
+<li>The difference between the current frame and the previous frame is computed by converting both to grayscale and performing a pixel-wise comparison. The resulting differences are then averaged to obtain a single value.</li>
+<li>If the average difference exceeds a predefined threshold, the frame is considered sufficiently different from the previous one to warrant generating a new caption.</li>
+<li>A new caption is also generated if the time elapsed since the last caption exceeds a specified maximum interval, ensuring captions are produced periodically even when little visual change occurs.</li>
+<li>To generate a caption, the current frame and a prompt are passed to a vision-language model (VLM).</li>
+<li>If the model returns an empty response, the request is retried.</li>
+<li>The resulting caption is rendered on a high-contrast banner at the top of the frame to ensure readability.</li>
+<li>The processed frames are then reassembled into a final video.</li>
+</ol></li>
+</ul>
+<p>The following figures show examples of outputs:</p>
+<p><img src="other_document/vlm_qna_interface.png" width="500"></p>
+<p><em>Figure: The Stage 3 Q&amp;A widget in action</em></p>
+<p>A user pauses the video at an arbitrary timestamp, types a natural-language question about the scene, and the VLM (Qwen3-VL:4b) generates an answer grounded in the frame content. The response is evidence-oriented — it refers to visible objects, colours, and spatial relationships rather than generic template text. Empty responses trigger an automatic retry with a rephrased prompt.</p>
+<p><img src="other_document/vlm_caption_highway.png" width="500"></p>
+<p><em>Figure: Q&amp;A widget for frame with caption “VLM-generated description of a multi-lane urban road scene” (exact text visible in the frame banner).</em></p>
+</section>
+<section id="qa-mode" class="level4">
+<h4 class="anchored" data-anchor-id="qa-mode">4.3.2 Q&amp;A Mode</h4>
+<ul>
+<li>The user selects a timestamp.</li>
+<li>One frame is sampled and sent to VLM.</li>
+<li>Output prioritizes direct answer + evidence-oriented explanation.</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>target_idx <span class="op">=</span> <span class="bu">int</span>(<span class="bu">round</span>(<span class="bu">max</span>(<span class="fl">0.0</span>, <span class="bu">float</span>(sec)) <span class="op">*</span> fps))</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>cap.<span class="bu">set</span>(cv2.CAP_PROP_POS_FRAMES, target_idx)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>ret, frame <span class="op">=</span> cap.read()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The following figure shows the Q&amp;A interface of the VLM.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="other_document/vlm_caption_red_car_rain.png" class="img-fluid figure-img"></p>
+<figcaption>VLM caption — red car in rain approaching traffic light</figcaption>
+</figure>
+</div>
+<p><em>Figure: Q&amp;A widget for frame with caption “A red car is driving down a wet road in the rain, approaching a traffic light.” (exact text visible in the frame banner)</em></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="other_document/vlm_caption_truck_pedestrian.png" class="img-fluid figure-img"></p>
+<figcaption>VLM caption — white truck and pedestrian at crossing</figcaption>
+</figure>
+</div>
+<p><em>Figure: Q&amp;A widget for frame with caption “A white truck and a pedestrian are crossing the road at a pedestrian crossing, with a red traffic light visible in the background.” (exact text visible in the frame banner)</em></p>
+</section>
+<section id="insights-from-the-vlm-outputs" class="level4">
+<h4 class="anchored" data-anchor-id="insights-from-the-vlm-outputs">4.3.3 Insights from the VLM outputs</h4>
+<ul>
+<li><strong>Fluent natural language:</strong> the VLM produces grammatically correct sentences with subject-verb-object structure, not keyword lists.</li>
+<li><strong>Rich attribute extraction:</strong> colour (red car, white truck), weather (rain), traffic state (red light), action (driving, crossing), and spatial relationships (“in the background”).</li>
+<li><strong>Scene-awareness:</strong> the three captions above describe entirely different situations — rainy driving, pedestrian crossing, and urban highway — demonstrating that adaptive gating successfully triggers new captions only when the scene actually changes.</li>
+<li><strong>Audience-ready:</strong> a non-engineer can read any caption and immediately understand what the car sees. This validates the “Explain” stage goal — turning bounding boxes into a story.</li>
+<li><strong>Complementary to detection:</strong> YOLO sees “car, truck, pedestrian, trafficLight-Red”; the VLM narrates “A red car is driving down a wet road…” — the same scene, two representations, one for machines and one for humans.</li>
+</ul>
+</section>
+</section>
+<section id="stage-4-semantic-segmentation" class="level3">
+<h3 class="anchored" data-anchor-id="stage-4-semantic-segmentation">4.4 Stage 4 — Semantic Segmentation</h3>
+<blockquote class="blockquote">
+<p><strong>Output</strong>: segmentation video: <code>runs_output/segmentation/cityscapes_segmented.mp4</code> (independent of Stages 1–3)</p>
+<p><strong>Corresponding notebook</strong>: 04_semantic_segmentation.ipynb</p>
+</blockquote>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    A["&lt;b&gt;Input Video&lt;/b&gt;&lt;br/&gt;original_videos/dashcam.mp4&lt;br/&gt;Independent of stages 1–3"]
+    --&gt; B["&lt;b&gt;SegFormer-B5&lt;/b&gt;&lt;br/&gt;nvidia/segformer-b5-&lt;br/&gt;finetuned-cityscapes-1024-1024&lt;br/&gt;via Hugging Face Transformers"]
+    --&gt; C["&lt;b&gt;Per-Frame Inference&lt;/b&gt;&lt;br/&gt;Upsampling via Nearest Neighbor &lt;br/&gt;Cityscapes Palette with 19 classes"]
+    --&gt; F["&lt;b&gt;Alpha-Blended Overlay&lt;/b&gt;&lt;br/&gt;on Original Video"]
+    --&gt; G["&lt;b&gt;Output&lt;/b&gt;&lt;br/&gt;runs_output/segmentation/&lt;br/&gt;cityscapes_segmented.mp4"]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<ul>
+<li>SegFormer-B5 is loaded.</li>
+<li>It is Vision Transformer encoder (captures global context) with a lightweight Mutli Layers Perceptron (MLP) decoder (defines sharp pixel boundaries).</li>
+<li>The videos as processed frame by frame.</li>
+</ul>
+<section id="results-2" class="level4">
+<h4 class="anchored" data-anchor-id="results-2">4.4.1 Results</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Original</th>
+<th>Segmentation Mask</th>
+<th>Blended Overlay (α=0.5)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><img src="other_document/segformer_original.png" class="img-fluid" alt="SegFormer original dashcam frame"></td>
+<td><img src="other_document/segformer_mask.png" class="img-fluid" alt="SegFormer segmentation mask"></td>
+<td><img src="other_document/segformer_blended.png" class="img-fluid" alt="SegFormer blended overlay"></td>
+</tr>
+</tbody>
+</table>
+<p><em>Figure: SegFormer-B5 (pretrained on Cityscapes) run on a dashcam frame. Left: original 960×540 input. Centre: 19-class Cityscapes pixel mask. Right: alpha-blended overlay (α=0.5) preserving scene structure while colouring road, vegetation, vehicles, and sky. The model processes 2,516 frames at ~5 it/s (total ~8 min 21 s) — a quality demonstration, not real-time.</em></p>
+</section>
+<section id="insights-from-the-segmentation-outputs" class="level4">
+<h4 class="anchored" data-anchor-id="insights-from-the-segmentation-outputs">4.4.2 Insights from the segmentation outputs</h4>
+<ul>
+<li><strong>Instant quality without training:</strong> SegFormer-B5 reaches 84% mIoU out-of-the-box on Cityscapes. No fine-tuning was needed for the dashcam domain — the pretrained weights generalise directly.</li>
+<li><strong>Fine-grained scene geometry:</strong> The mask distinguishes road, sidewalk, vegetation, traffic structures, and vehicles at pixel level — information YOLO bounding boxes cannot capture.</li>
+<li><strong>Boundary preservation:</strong> Nearest-neighbour upsampling from 1024×1024 to the original resolution keeps sharp class edges without smoothing artifacts.</li>
+<li><strong>Complementary to detection:</strong> Where YOLO answers “where is the car?” with a box, SegFormer answers “what is the road surface?” with a mask. Together they give both object-level and scene-level understanding.</li>
+<li><strong>Small-object limits:</strong> Pedestrians, traffic lights, and signs are often only a few dozen pixels in a 960×540 frame. SegFormer may mislabel or “smear” distant/occluded pedestrians — safety-critical detection still belongs to YOLO.</li>
+<li><strong>Temporal jitter:</strong> Per-frame inference without temporal smoothing (optical flow or multi-frame fusion) causes label flicker on moving vehicles and pedestrians. A car may flicker between <code>car</code> and <code>truck</code> across frames.</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="current-results" class="level2">
+<h2 class="anchored" data-anchor-id="current-results">5. Current Results</h2>
+<ul>
+<li><strong>Detection:</strong> YOLO26s fine-tuned on Self-Driving-Car-3 achieves P=0.874, R=0.754, mAP@0.5=0.842, mAP@0.5:0.95=0.515 — a substantial lift over the YOLOv10n baseline (mAP@0.5 +24.7%, strict mAP +32.7%).</li>
+<li><strong>Enrichment:</strong> CLIP linear probe reaches 79.8% Top-1 accuracy on 20 car brands (vs.&nbsp;54.95% zero-shot), validated on a held-out test split.</li>
+<li><strong>Explain:</strong> VLM adaptive captioning produces fluent, attribute-rich sentences verified on real dashcam frames (e.g.&nbsp;“A red car is driving down a wet road in the rain, approaching a traffic light”).</li>
+<li><strong>Segmentation:</strong> SegFormer-B5 delivers 84% mIoU on Cityscapes 19 classes out of the box, producing quality pixel-level scene overlays.</li>
+<li><strong>End-to-end:</strong> Stages 1→2b→3 run sequentially on a single local GPU; Stage 4 runs independently on the same input video.</li>
+</ul>
+</section>
+<section id="known-limits" class="level2">
+<h2 class="anchored" data-anchor-id="known-limits">6. Known Limits</h2>
+<ul>
+<li><strong>Stage 2b coverage</strong>: only <code>class == "car"</code> triggers CLIP brand classification. Trucks are intentionally excluded because the linear probe was trained on car-only images; truck crops are out-of-distribution and would yield miscalibrated brand confidence.</li>
+<li><strong>No tracking</strong>: no per-vehicle ID across frames → brand labels flicker even when YOLO is stable.</li>
+<li><strong>Domain mismatch</strong>: linear probe was trained on well-framed brand photos and is applied to small / oblique / motion-blurred dashcam crops → noisy outputs.</li>
+<li><strong>CLIP not batched</strong>: one crop at a time per frame.</li>
+<li><strong>Stage 3 banner</strong>: hardcoded font/thickness sized for very large frames; oversized on 720p/1080p.</li>
+<li><strong>Brand list</strong>: 20 European-leaning brands only (no Tesla, Subaru, Mazda, Lexus, …).</li>
+<li><strong>Single-frame Q&amp;A</strong>: misses temporal context (motion, intent, signal transitions).</li>
+<li><strong>Exact model identification</strong> from dashcam distance/resolution is often not visually verifiable.</li>
+<li><strong>Fixed segmentation ontology:</strong> Cityscapes has no class for potholes, construction zones, or speed bumps. Anything outside the 19 classes is forced into the closest label or dropped as void.</li>
+<li><strong>No instance separation:</strong> All vehicles share the same <code>car</code> (13) or <code>truck</code> (14) color. Segmentation cannot count distinct vehicles — only YOLO’s bounding boxes provide object identity.</li>
+</ul>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">7. Conclusion</h2>
+<p>This project demonstrates how multiple computer vision techniques can be successfully integrated into a unified pipeline for enhanced dashcam scene understanding. By combining a fine-tuned YOLO26s detector, a CLIP-based car-brand classifier, a vision-language model for natural-language explanations, and a semantic segmentation model, the system provides complementary object-level, scene-level, and human-readable interpretations of the same driving environment. Experimental results show significant improvements over the initial baseline, with YOLO26s achieving strong detection performance and the CLIP linear probe outperforming zero-shot classification. The VLM-generated captions and Q&amp;A interface further improve accessibility by translating technical predictions into intuitive descriptions, while SegFormer enriches the representation with pixel-level scene geometry. Although limitations remain, including the absence of object tracking, limited brand coverage, and single-frame reasoning, the project successfully validates the concept of combining detection, recognition, explanation, and segmentation within a single end-to-end workflow.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
