@@ -70,7 +70,7 @@ Off-diagonal mass is concentrated in two expected patterns: (1) `car` ↔ `truck
 
 The following figure shows the precision-recall curve on the validation data set.
 
-<img src="other_document/yolo_pr_curve.png" width="600">
+<img src="other_document/yolo_pr_curve.png" width="500">
 
 *Figure: Box-level precision-recall curve across all 11 classes*
 
@@ -163,7 +163,7 @@ flowchart LR
 #### 4.2.1 Results
 The figure below shows the confusion matrix for the zero-shot CLIP model.
 
-<img src="other_document/OpenCLIP-confusion-matrix.png" width="700">
+<img src="other_document/OpenCLIP-confusion-matrix.png" width="500">
 
 *Figure: Confusion matrix for the zero-shot CLIP model*
 
@@ -224,7 +224,7 @@ flowchart LR
     --> E["<b>CLIP + Linear Probe</b><br/>Brand Classification<br/>Top-1 Brand +<br/>Softmax Confidence"]
     --> G["<b>Annotated Video</b><br/>runs_output/detect/clip_predict/<br/>annotated_video.mp4"]
 ```
-    Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.
+*Confidence threshold: YOLO outputs a raw score (objectness × class probability) per box. conf=0.2 is a post-processing filter — boxes below 20 % are discarded before reaching CLIP. Value was lowered (initially 0.4) to catch more distant/occluded cars without excessive false positives.*
 
 - The OpenCLIP model and its linear probe weights are loaded.
 - The fine-tuned YOLO model is also loaded.
@@ -273,7 +273,7 @@ A user pauses the video at an arbitrary timestamp, types a natural-language ques
 
 <img src="other_document/vlm_caption_highway.png" width="500">
 
-*Caption: VLM-generated description of a multi-lane urban road scene (exact text visible in the frame banner).*
+*Figure: Q&A widget for frame with caption "VLM-generated description of a multi-lane urban road scene" (exact text visible in the frame banner).*
 
 #### 4.3.2 Q&A Mode
 - The user selects a timestamp.
@@ -289,11 +289,11 @@ The following figure shows the Q&A interface of the VLM.
 
 ![VLM caption — red car in rain approaching traffic light](other_document/vlm_caption_red_car_rain.png)
 
-*Caption: "A red car is driving down a wet road in the rain, approaching a traffic light."*
+*Figure: Q&A widget for frame with caption "A red car is driving down a wet road in the rain, approaching a traffic light." (exact text visible in the frame banner)*
 
 ![VLM caption — white truck and pedestrian at crossing](other_document/vlm_caption_truck_pedestrian.png)
 
-*Caption: "A white truck and a pedestrian are crossing the road at a pedestrian crossing, with a red traffic light visible in the background."*
+*Figure: Q&A widget for frame with caption "A white truck and a pedestrian are crossing the road at a pedestrian crossing, with a red traffic light visible in the background." (exact text visible in the frame banner)*
 
 #### 4.3.3 Insights from the VLM outputs
 - **Fluent natural language:** the VLM produces grammatically correct sentences with subject-verb-object structure, not keyword lists.
@@ -305,7 +305,7 @@ The following figure shows the Q&A interface of the VLM.
 
 ### 4.4 Stage 4 — Semantic Segmentation
 >
->**Output**: segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4` (pretrained SegFormer-B5 on Cityscapes, independent of Stages 1–3)
+>**Output**: segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4` (independent of Stages 1–3)
 >
 >**Corresponding notebook**: 04_semantic_segmentation.ipynb
 >
