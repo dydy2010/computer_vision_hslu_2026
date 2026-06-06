@@ -33,7 +33,6 @@ optionally — compressed YOLO-only video: `runs_output/detect/predict*/converte
 >
 >**Corresponding notebook**: 01_yolo_finetune.ipynb
 >
-
 ```{mermaid}
 flowchart LR
     A["<b>YOLO26s</b><br/>Pretrained Weights"]
@@ -144,7 +143,6 @@ Beyond the numbers, this project demonstrates three practical CV principles in a
 >
 >**Corresponding notebook**: 02a_clip_probe_train.ipynb
 >
-
 ```{mermaid}
 flowchart LR
     A["<b>Frozen OpenCLIP</b><br/>ViT-B-32<br/>laion2b_s34b_b79k"]
@@ -219,7 +217,6 @@ The pipeline runs per-frame: YOLO detects cars, CLIP crops and classifies each q
 >**Output**: annotated video: `runs_output/detect/clip_predict/annotated_video.mp4`
 >
 >**Corresponding notebook**: 02b_yolo_clip_video.ipynb
-
 ```{mermaid}
 flowchart LR
     B["<b>YOLO Detection<br/>on video frames</b><br/>conf=0.2"]
@@ -245,7 +242,6 @@ flowchart LR
   (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
 >
 >**Corresponding notebook**: 03_vlm_caption.ipynb
-
 ```{mermaid}
 flowchart LR
     A["<b>Video Frames</b>"]
@@ -313,7 +309,6 @@ The following figure shows the Q&A interface of the VLM.
 >
 >**Corresponding notebook**: 04_semantic_segmentation.ipynb
 >
-
 ```{mermaid}
 flowchart LR
     A["<b>Input Video</b><br/>original_videos/dashcam.mp4<br/>Independent of stages 1–3"]
