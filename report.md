@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 # HSLU Computer Vision Project: YOLO + CLIP + VLM Captioned Dashcam Demo
 
 > **Date:** June 9th 2026

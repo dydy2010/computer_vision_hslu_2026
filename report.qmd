@@ -15,7 +15,7 @@ This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32*
 - Add per-vehicle car-brand recognition via CLIP image embeddings + a trained linear probe.
 - Add VLM-based scene understanding and audience-friendly captions.
 - Provide a simple Q&A interface for selected timestamps.
-- Export compact outputs suitable for the final PowerPoint presentation.
+- Enable learning for computer vision students by trying out as many CV models and concepts as possible.
 
 ## 3. Data and Environment
 - **YOLO dataset:** Self-Driving-Car-3 (Roboflow), 11 classes (`biker, car, pedestrian, trafficLight*, truck`), 11'000 pictures; kept locally, not pushed to git.
