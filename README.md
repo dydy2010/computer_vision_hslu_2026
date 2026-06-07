@@ -42,7 +42,7 @@ To install all required packages in the local environement, please run `pip inst
 **Stage 4 — Semantic Segmentation** (`04_semantic_segmentation.ipynb`)
 - Pretrained `nvidia/segformer-b5-finetuned-cityscapes-1024-1024` via Hugging Face Transformers (~84.7M params, 84.0% mIoU on Cityscapes).
 - Hybrid architecture: Vision Transformer encoder for global context + lightweight MLP decoder for sharp pixel boundaries.
-- Full 30-class Cityscapes palette (road, sidewalk, building, vegetation, sky, person, car, truck, bus, etc.).
+- Predicts the 19 Cityscapes train classes (road, sidewalk, building, vegetation, sky, person, car, truck, bus, etc.); the color palette reserves 30 entries for indexing safety, but only indices 0–18 are predicted (19–29 are void/unlabeled).
 - Nearest-neighbor upsampling preserves class boundaries; alpha-blended overlay on original video.
 - Output: `runs_output/segmentation/cityscapes_segmented.mp4`.
 - Not real-time by design — quality demonstration; real-time detection is handled by Stages 1/2b.
