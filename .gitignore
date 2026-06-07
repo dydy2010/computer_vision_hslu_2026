@@ -203,6 +203,8 @@ cython_debug/
 runs_output/
 original_videos/
 *.mp4
+!video_output_showcase/
+!video_output_showcase/*.mp4
 *.avi
 
 # Dataset: keep metadata only (data.yaml + README*)

@@ -135,6 +135,19 @@ if not answer:
   (`<selected_output_dir>` = `clip_predict` if it exists, else the highest-numbered `predict*`, else `predict`)
 - Stage 4 segmentation video: `runs_output/segmentation/cityscapes_segmented.mp4`
 
+## Showcase Videos (Compressed for Presentation)
+
+The full-resolution pipeline outputs are too large for Git, so compressed demo clips (~10–13 MB each) are stored in `video_output_showcase/` for quick viewing and presentation:
+
+| File | Stage | Description |
+|---|---|---|
+| `yolo_detection.mp4` | Stage 1 | YOLO detection (bounding boxes + class labels) |
+| `clip_brand.mp4` | Stage 2b | YOLO + CLIP car-brand overlay |
+| `vlm_caption.mp4` | Stage 3 | VLM-generated caption banner overlay |
+| `segformer_segmentation.mp4` | Stage 4 | SegFormer-B5 Cityscapes segmentation mask overlay |
+
+These files are compressed versions intended for showcasing the project without needing to re-run the full pipeline.
+
 ## Notes
 - Q&A uses one selected frame per timestamp (single-frame reasoning).
 - Model/brand identification is uncertain from many frames; prefer type/color/position unless clear.
