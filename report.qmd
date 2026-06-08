@@ -6,6 +6,8 @@ format:
 ---
 
 > **Date:** June 9th 2026       **Authors:** Dongyuan Gao & Solène Cosandey
+>
+> **Repository:** [github.com/dydy2010/computer_vision_hslu_2026](https://github.com/dydy2010/computer_vision_hslu_2026)
 
 ## 1. Project Summary
 This project combines a fine-tuned **YOLO26s** detector, an **OpenCLIP ViT-B-32** backbone with a 20-class linear probe for car-brand recognition, and a local **Qwen3-VL** vision-language model to turn raw dashcam video into an annotated, narrated, and queryable street-understanding demo. The core insight is that accurate detection alone does not build human trust — the same scene needs two representations: bounding boxes for machines, and plain language for people. The pipeline demonstrates this end-to-end, producing an annotated Stage 2 video and a captioned Stage 3 video. Stage 1 also has an optional `ffmpeg` compression cell for the YOLO-only output.
