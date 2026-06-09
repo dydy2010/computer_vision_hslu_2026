@@ -17,6 +17,7 @@ You install and run **Ollama in the terminal**. The notebook only needs the **Py
    - Task: Start Ollama in a terminal.
    - Command:
      ```bash
+     ollama run qwen3-vl:4b
      ollama serve
      ```
     - Note: `ollama serve` starts the server for all models. You do **not** pass a model name here.
